@@ -62,3 +62,4 @@ Thumbs.db
 # ====== Misc ======
 *.hprof
 .claude/settings.local.json
+flow.md
