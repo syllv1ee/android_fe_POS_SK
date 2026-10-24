@@ -1,0 +1,60 @@
+package com.mhyddnn.mubarokappmobile.feature.salescanvas.ui
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Receipt
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.SwapHoriz
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import com.mhyddnn.mubarokappmobile.core.designsystem.AppScaffold
+import com.mhyddnn.mubarokappmobile.core.designsystem.EmptyView
+import com.mhyddnn.mubarokappmobile.core.designsystem.MenuShortcutCard
+import com.mhyddnn.mubarokappmobile.feature.salescanvas.SalesCanvasRoutes
+import com.mhyddnn.mubarokappmobile.ui.theme.AppTheme
+
+/** Hub Sales Kanvas: pintasan ke Penjualan, Retur, Tagihan. */
+@Composable
+fun SalesCanvasScreen(
+    onMenuClick: (Any) -> Unit,
+    onBack: () -> Unit,
+) {
+    AppScaffold(title = "Sales Kanvas", onBack = onBack) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(AppTheme.colors.background)
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            listOf(
+                Triple("Penjualan", Icons.Default.ShoppingCart, SalesCanvasRoutes.Sale),
+                Triple("Retur", Icons.Default.SwapHoriz, SalesCanvasRoutes.Return),
+                Triple("Tagihan", Icons.Default.Receipt, SalesCanvasRoutes.Billing),
+            ).forEach { (label, icon, route) ->
+                MenuShortcutCard(
+                    label = label,
+                    icon = icon,
+                    onClick = { onMenuClick(route) },
+                    modifier = Modifier.weight(1f),
+                )
+            }
+        }
+    }
+}
+
+// ponytail: satu layar kosong dipakai bersama; pecah per fitur saat isinya mulai dibuat.
+@Composable
+fun SalesCanvasPlaceholderScreen(title: String, onBack: () -> Unit) {
+    AppScaffold(title = title, onBack = onBack) {
+        EmptyView(
+            message = "Belum ada konten",
+            modifier = Modifier.background(AppTheme.colors.background),
+        )
+    }
+}

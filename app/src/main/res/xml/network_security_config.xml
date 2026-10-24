@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  RELEASE: hanya HTTPS (tanpa izin cleartext). Build debug memakai config di src/debug yang
+  mengizinkan HTTP ke host mana pun (server dev di LAN / emulator).
+-->
+<network-security-config />

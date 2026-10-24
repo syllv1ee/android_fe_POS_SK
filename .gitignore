@@ -1,0 +1,64 @@
+# ====== Gradle ======
+.gradle/
+build/
+**/build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/**/build/
+
+# ====== Android / Build output ======
+/captures/
+*.apk
+*.aab
+*.ap_
+*.aar
+*.dex
+*.class
+bin/
+gen/
+out/
+release/
+
+# Generated files
+gradle-app.setting
+.gradletasknamecache
+
+# ====== Native ======
+.externalNativeBuild/
+.cxx/
+obj/
+
+# ====== Local config & secrets ======
+# Berisi path SDK lokal & kemungkinan kredensial signing — jangan di-commit
+local.properties
+keystore.properties
+*.jks
+*.keystore
+google-services.json
+
+# ====== Android Studio / IntelliJ IDEA ======
+*.iml
+.idea/
+# Jika ingin share sebagian config IDE, hapus baris .idea/ di atas
+# dan aktifkan ignore granular di bawah:
+# .idea/caches/
+# .idea/libraries/
+# .idea/modules.xml
+# .idea/workspace.xml
+# .idea/navEditor.xml
+# .idea/assetWizardSettings.xml
+
+# ====== Kotlin ======
+.kotlin/
+
+CLAUDE.md
+
+# ====== OS files ======
+.DS_Store
+Thumbs.db
+
+# ====== Logs ======
+*.log
+
+# ====== Misc ======
+*.hprof
+.claude/settings.local.json

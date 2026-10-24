@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  KHUSUS BUILD DEBUG: izinkan cleartext (HTTP) ke semua host, supaya override "Server URL" di
+  app bisa menunjuk IP LAN mana pun tanpa mendaftarkannya satu per satu. Build RELEASE memakai
+  config di src/main (HTTPS, tanpa izin cleartext umum).
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>
