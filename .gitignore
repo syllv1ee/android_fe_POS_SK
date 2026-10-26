@@ -63,3 +63,4 @@ Thumbs.db
 *.hprof
 .claude/settings.local.json
 flow.md
+endpoint_plan.md
