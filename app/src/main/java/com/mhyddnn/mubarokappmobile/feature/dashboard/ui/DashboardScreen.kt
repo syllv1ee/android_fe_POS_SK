@@ -32,6 +32,12 @@ import com.mhyddnn.mubarokappmobile.core.designsystem.StatusTone
 import com.mhyddnn.mubarokappmobile.core.designsystem.surface
 import com.mhyddnn.mubarokappmobile.ui.theme.AppTheme
 
+/**
+ * Beranda (landing setelah login): sapaan, banner status sinkron, dan grid menu.
+ *
+ * Banner: needsRelogin (merah, tombol Login → [onRelogin]) didahulukan; selain itu jumlah data
+ * belum terkirim (kuning). Navigasi diserahkan ke pemanggil lewat [onMenuClick] (objek rute).
+ */
 @Composable
 fun DashboardScreen(
     onMenuClick: (Any) -> Unit,
@@ -67,7 +73,7 @@ fun DashboardScreen(
                 color = colors.onPrimary.copy(alpha = 0.8f),
             )
             AppText(
-                text = "Halo, ${session?.employeeName ?: session?.username ?: "Sales"}",
+                text = "Halo, ${session?.username}",
                 style = typography.headlineSmall,
                 color = colors.onPrimary,
             )
@@ -110,6 +116,8 @@ fun DashboardScreen(
     }
 }
 
+// ponytail: belum dipanggil (lihat baris ter-comment di atas) — aktifkan saat DashboardSummary
+// diisi data asli; sekarang semua nilai "—".
 @Composable
 private fun SummaryCard(summary: DashboardSummary) {
     Row(
@@ -153,6 +161,7 @@ private fun SummaryStat(label: String, value: String, modifier: Modifier = Modif
     }
 }
 
+/** Grid 3 kolom; baris terakhir diisi Spacer agar kartu tidak melebar. */
 @Composable
 private fun MenuGrid(menus: List<DashboardMenu>, onMenuClick: (Any) -> Unit) {
     if (menus.isEmpty()) {

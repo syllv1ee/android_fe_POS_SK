@@ -14,6 +14,6 @@ interface AuthApi {
     @POST("auth/logout")
     suspend fun logout(): Response<ApiResponse<Unit>>
 
-    @GET("auth/profile")
-    suspend fun profile(): Response<ApiResponse<UserDto>>
+    @GET("auth/me")
+    suspend fun me(): Response<ApiResponse<UserDto>>
 }

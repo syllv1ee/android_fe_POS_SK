@@ -20,11 +20,7 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
 import com.mhyddnn.mubarokappmobile.ui.theme.AppTheme
 
-/**
- * Kerangka layar standar: top bar dengan judul + tombol back opsional, lalu konten yang
- * sudah menerima inner padding (nol — top bar sudah dikeluarkan dari area konten lewat
- * `Column`), dan [floatingActionButton] mengambang di kanan bawah.
- */
+/** Kerangka layar standar*/
 @Composable
 fun AppScaffold(
     title: String,

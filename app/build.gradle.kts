@@ -5,6 +5,13 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
+    alias(libs.plugins.room)
+}
+
+// Schema tiap versi DB → app/schemas/*.json (WAJIB di-commit). Dipakai MigrationTestHelper
+// (androidTest) untuk memastikan Migration menghasilkan schema yang sama dengan entity.
+room {
+    schemaDirectory("$projectDir/schemas")
 }
 
 android {
@@ -24,10 +31,10 @@ android {
     buildTypes {
         debug {
             // Server dev (NestJS) di LAN. Device fisik menembak IP host langsung.
-            // (Emulator: ganti ke http://10.0.2.2:3000/api/)
-            buildConfigField("String", "BASE_URL", "\"http://192.168.1.4:3000/api/\"")
-            // Login asli (BE lokal aktif): cookie token diperlukan untuk endpoint terlindungi.
-            // Set true hanya untuk dev UI cepat tanpa BE (sesi dev tanpa cookie → API 401).
+            // (Emulator: ganti ke http://10.0.2.2:53110/api/) — port = PORT di .env sales-kanvas-be.
+            buildConfigField("String", "BASE_URL", "\"http://192.168.1.4:53110/api/\"")
+            // Login asli (BE lokal aktif): Bearer token diperlukan untuk endpoint terlindungi.
+            // Set true hanya untuk dev UI cepat tanpa BE (sesi dev tanpa token → API 401).
             buildConfigField("boolean", "SKIP_LOGIN", "false")
         }
         release {
@@ -108,6 +115,7 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(libs.androidx.room.testing)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)

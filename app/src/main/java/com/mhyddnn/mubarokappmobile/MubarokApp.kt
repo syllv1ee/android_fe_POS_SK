@@ -1,6 +1,7 @@
 package com.mhyddnn.mubarokappmobile
 
 import android.app.Application
+import androidx.work.ExistingWorkPolicy
 import com.mhyddnn.mubarokappmobile.core.sync.SyncScheduler
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
@@ -13,7 +14,8 @@ class MubarokApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        // Sisa antrean dari sesi sebelumnya ikut dikirim begitu ada sinyal.
-        syncScheduler.schedule()
+        // Sisa antrean dari sesi sebelumnya ikut dikirim begitu ada sinyal. KEEP: work yang sudah
+        // menunggu jaringan dipakai ulang, tidak ditambah satu rantai per buka app.
+        syncScheduler.schedule(ExistingWorkPolicy.KEEP)
     }
 }

@@ -10,7 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.mhyddnn.mubarokappmobile.ui.theme.AppTheme
 
-/** Pita info sebaris (mis. "Mode offline", "Login ulang untuk sinkron") + aksi opsional. */
+/** Notif (mis. "Mode offline", "Login ulang untuk sinkron") + aksi opsional. */
 @Composable
 fun NoticeBanner(
     text: String,

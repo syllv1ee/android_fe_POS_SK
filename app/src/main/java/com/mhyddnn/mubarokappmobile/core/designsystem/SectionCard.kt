@@ -12,7 +12,7 @@ import androidx.compose.ui.unit.dp
 import com.mhyddnn.mubarokappmobile.ui.theme.AppTheme
 
 /**
- * Card bertajuk untuk mengelompokkan konten di layar detail (mis. "Personil", "Barang dibawa",
+ * Card untuk mengelompokkan konten di layar detail (mis. "Personil", "Barang dibawa",
  * "Pembayaran"). Judul di kiri, [trailing] opsional di kanan (mis. jumlah item / aksi), lalu
  * [content] tersusun vertikal dengan jarak antar-elemen yang konsisten.
  */

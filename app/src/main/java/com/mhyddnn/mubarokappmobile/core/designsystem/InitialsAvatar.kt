@@ -14,8 +14,7 @@ import com.mhyddnn.mubarokappmobile.ui.theme.AppTheme
 
 /**
  * Avatar lingkaran berisi inisial nama (mis. "Budi Santoso" → "BS"). Dipakai header profil &
- * tempat lain yang butuh representasi user tanpa gambar. [containerColor]/[contentColor] bisa
- * disesuaikan agar kontras (mis. di atas header brand).
+ * tempat lain yang butuh representasi user tanpa gambar.
  */
 @Composable
 fun InitialsAvatar(

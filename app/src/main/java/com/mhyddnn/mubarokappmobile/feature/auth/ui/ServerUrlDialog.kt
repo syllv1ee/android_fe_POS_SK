@@ -42,6 +42,10 @@ class DevServerViewModel @Inject constructor(
     suspend fun currentOrDefault(): String =
         settingsManager.serverBaseUrl.first() ?: BuildConfig.BASE_URL
 
+    /**
+     * Simpan override (null = reset). Fire-and-forget: dialog langsung ditutup; request berikutnya
+     * memakai URL baru karena `ServerUrlInterceptor` membaca setting di setiap request.
+     */
     fun save(url: String?) {
         viewModelScope.launch { settingsManager.setServerBaseUrl(url) }
     }

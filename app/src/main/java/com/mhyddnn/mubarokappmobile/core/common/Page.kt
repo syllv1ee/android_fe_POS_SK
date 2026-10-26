@@ -1,9 +1,5 @@
 package com.mhyddnn.mubarokappmobile.core.common
 
-/**
- * Satu halaman hasil dari endpoint list ber-pagination (diisi dari `meta` envelope backend).
- * [hasNext] dipakai UI untuk memutuskan memuat halaman berikutnya.
- */
 data class Page<T>(
     val items: List<T>,
     val page: Int,

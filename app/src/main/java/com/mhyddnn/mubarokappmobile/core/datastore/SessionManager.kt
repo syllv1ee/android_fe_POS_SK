@@ -12,6 +12,8 @@ import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
+// File `datastore/session.preferences_pb`. Delegate ini WAJIB satu per nama file per proses —
+// dua instance DataStore ke file yang sama → IllegalStateException.
 private val Context.dataStore by preferencesDataStore(name = "session")
 
 /** Profil ringkas user yang sedang login (dipakai UI untuk header & gating menu). */
@@ -19,15 +21,14 @@ data class UserSession(
     val username: String,
     val employeeName: String?,
     val roleName: String?,
+    /** Nama permission dari `user.permissions[].name` saat login, mis. `plan:write`. */
     val permissions: Set<String>,
-    /** Super Admin → bypass semua permission (lihat [isSuperAdminRole] & doc_rbac.md §6). */
+    /** Super Admin → bypass semua permission (lihat [isSuperAdminRole]). */
     val isSuperAdmin: Boolean = false,
 )
 
 /**
- * Deteksi role Super Admin, konsisten dengan `PermissionsGuard.isSuperAdmin()` di backend
- * (doc_rbac.md §6): cocok salah satu nama (case-insensitive) `super admin`/`superadmin`/
- * `super-admin`, ATAU fallback `role.id == 1`.
+ * Deteksi role Super Admin, cermin `PermissionsGuard.isSuperAdmin()`
  */
 fun isSuperAdminRole(roleName: String?, roleId: Int?): Boolean {
     val name = roleName?.trim()?.lowercase()
@@ -38,8 +39,12 @@ fun isSuperAdminRole(roleName: String?, roleId: Int?): Boolean {
 }
 
 /**
- * Cek izin di sisi UI (mis. menampilkan/menyembunyikan menu). Super Admin selalu lolos.
- * Selain itu mendukung wildcard `modul:*` dan super `*`.
+ * Cek izin di sisi UI (menampilkan/menyembunyikan menu & tombol) , server tetap
+ * memeriksa ulang dan membalas 403. Super Admin selalu lolos; selain itu cocok persis, wildcard
+ * `modul:*`, atau `*`.
+ *
+ * Harus sejalan dengan `matchesPermission()` di BE (`permission.guard.ts`). Saat ini BE tidak
+ * mengenal `*` tapi mendukung `modul:aksi:*`; samakan bila aturan permission diubah.
  */
 fun UserSession.has(permission: String): Boolean =
     isSuperAdmin ||
@@ -48,10 +53,9 @@ fun UserSession.has(permission: String): Boolean =
         "*" in permissions
 
 /**
- * Menyimpan status login & daftar permission user. Token TIDAK disimpan di sini —
- * token ada di cookie ([com.mhyddnn.mubarokappmobile.core.network.SessionCookieJar]).
- * Permission dipakai untuk menyembunyikan/menonaktifkan aksi (mis. tombol "Simpan
- * Penjualan" hanya muncul bila ada `sales-kanvas:write`).
+ * Menyimpan status login & profil user di DataStore Preferences. Token TIDAK disimpan di sini —
+ * token ada di [com.mhyddnn.mubarokappmobile.core.network.TokenStore] (dibaca sinkron oleh OkHttp,
+ * sedangkan DataStore hanya async).
  */
 @Singleton
 class SessionManager @Inject constructor(
@@ -67,9 +71,11 @@ class SessionManager @Inject constructor(
         val NEEDS_RELOGIN = booleanPreferencesKey("needs_relogin")
     }
 
+    /** Cek Login. */
     val isLoggedIn: Flow<Boolean> =
         context.dataStore.data.map { it[Keys.LOGGED_IN] ?: false }
 
+    /** Profil user aktif; null bila belum login. */
     val session: Flow<UserSession?> =
         context.dataStore.data.map { prefs ->
             if (prefs[Keys.LOGGED_IN] != true) return@map null
@@ -82,25 +88,25 @@ class SessionManager @Inject constructor(
             )
         }
 
-    /**
-     * true = refresh token ditolak server (habis 7 hari / dicabut). Sesi lokal SENGAJA tetap ada
-     * agar app tetap bisa dipakai offline; UI cukup meminta login ulang, dan sinkron outbox
-     * berhenti sampai login berhasil.
-     */
+    /** true = refresh token ditolak server */
     val needsRelogin: Flow<Boolean> =
         context.dataStore.data.map { it[Keys.NEEDS_RELOGIN] ?: false }
 
+    /** Dipanggil `TokenAuthenticator` saat refresh ditolak. Tanpa efek bila belum/sudah logout. */
     suspend fun markNeedsRelogin() {
         context.dataStore.edit { prefs ->
             if (prefs[Keys.LOGGED_IN] == true) prefs[Keys.NEEDS_RELOGIN] = true
         }
     }
 
+    /**
+     * Simpan profil setelah login sukses (atomik dalam satu `edit`) dan hapus tanda needsRelogin.
+     */
     suspend fun save(session: UserSession) {
         context.dataStore.edit { prefs ->
             prefs[Keys.LOGGED_IN] = true
             prefs[Keys.USERNAME] = session.username
-            // Login ulang bisa dengan user lain tanpa clear() — jangan sisakan nilai user lama.
+            // Login ulang bisa dengan user lain.
             session.employeeName?.let { prefs[Keys.EMPLOYEE] = it } ?: prefs.remove(Keys.EMPLOYEE)
             session.roleName?.let { prefs[Keys.ROLE] = it } ?: prefs.remove(Keys.ROLE)
             prefs[Keys.PERMISSIONS] = session.permissions
@@ -109,6 +115,10 @@ class SessionManager @Inject constructor(
         }
     }
 
+    /**
+     * Logout: hapus seluruh sesi → [isLoggedIn] false → `MainActivity` pindah ke Login. Outbox &
+     * cache di Room TIDAK ikut dihapus (milik username itu, dipakai lagi saat ia login kembali).
+     */
     suspend fun clear() {
         context.dataStore.edit { it.clear() }
     }

@@ -11,7 +11,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -24,13 +23,16 @@ class MainViewModel @Inject constructor(
     private val sessionManager: SessionManager,
 ) : ViewModel() {
 
-    /** Mode tema pilihan user (override tema sistem). */
-    val themeMode: StateFlow<ThemeMode> = settingsManager.themeMode
-        .stateIn(viewModelScope, SharingStarted.Eagerly, ThemeMode.SYSTEM)
+    /** Mode tema pilihan user (override tema sistem). null = belum terbaca → tahan di splash. */
+    val themeMode: StateFlow<ThemeMode?> = settingsManager.themeMode
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    val isLoggedIn: StateFlow<Boolean?> = authRepository.isLoggedIn
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     init {
         // DEV ONLY (BuildConfig.SKIP_LOGIN, debug saja): semai sesi dev agar langsung masuk
-        // tanpa login. Tidak ada cookie token, jadi panggilan API asli tetap 401 — ini hanya
+        // tanpa login. Tidak ada token, jadi panggilan API asli tetap 401 — ini hanya
         // untuk mempercepat pengembangan UI. Nonaktifkan via SKIP_LOGIN=false di build.gradle.
         if (BuildConfig.SKIP_LOGIN) {
             viewModelScope.launch {
@@ -40,10 +42,6 @@ class MainViewModel @Inject constructor(
             }
         }
     }
-
-    val isLoggedIn: StateFlow<Boolean?> = authRepository.isLoggedIn
-        .map { it }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     private companion object {
         val DEV_SESSION = UserSession(

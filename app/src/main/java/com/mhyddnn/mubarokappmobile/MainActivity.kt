@@ -28,20 +28,20 @@ class MainActivity : ComponentActivity() {
         setContent {
             val viewModel: MainViewModel = hiltViewModel()
             val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
+            val loggedIn by viewModel.isLoggedIn.collectAsStateWithLifecycle()
             val darkTheme = when (themeMode) {
-                ThemeMode.SYSTEM -> isSystemInDarkTheme()
                 ThemeMode.LIGHT -> false
                 ThemeMode.DARK -> true
+                ThemeMode.SYSTEM, null -> isSystemInDarkTheme()
             }
 
             MubarokAppTheme(darkTheme = darkTheme) {
                 Box(modifier = Modifier.fillMaxSize().background(AppTheme.colors.background)) {
-                    val loggedIn by viewModel.isLoggedIn.collectAsStateWithLifecycle()
-
-                    when (loggedIn) {
-                        null -> LoadingView()
-                        true -> AppNavHost(startDestination = Routes.Home)
-                        false -> AppNavHost(startDestination = Routes.Login)
+                    // Tahan di splash sampai tema & sesi terbaca, agar layar pertama tidak berganti warna.
+                    when {
+                        themeMode == null || loggedIn == null -> LoadingView()
+                        loggedIn == true -> AppNavHost(startDestination = Routes.Home)
+                        else -> AppNavHost(startDestination = Routes.Login)
                     }
                 }
             }

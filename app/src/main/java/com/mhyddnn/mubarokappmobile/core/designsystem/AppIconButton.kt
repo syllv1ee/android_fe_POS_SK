@@ -8,7 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.composeunstyled.UnstyledButton
 
-/** Pengganti `IconButton` M3: target sentuh 40dp bulat, tanpa latar. */
+/** IconButton */
 @Composable
 fun AppIconButton(
     onClick: () -> Unit,

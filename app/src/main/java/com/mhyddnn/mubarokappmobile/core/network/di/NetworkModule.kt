@@ -3,10 +3,13 @@ package com.mhyddnn.mubarokappmobile.core.network.di
 import android.content.Context
 import com.mhyddnn.mubarokappmobile.BuildConfig
 import com.mhyddnn.mubarokappmobile.core.datastore.SessionManager
+import com.mhyddnn.mubarokappmobile.core.network.AUTHORIZATION
+import com.mhyddnn.mubarokappmobile.core.network.AuthInterceptor
+import com.mhyddnn.mubarokappmobile.core.network.PrefsTokenStore
 import com.mhyddnn.mubarokappmobile.core.network.ServerUrlInterceptor
-import com.mhyddnn.mubarokappmobile.core.network.SessionCookieJar
 import com.mhyddnn.mubarokappmobile.core.network.TokenAuthenticator
 import com.mhyddnn.mubarokappmobile.core.network.TokenRefreshApi
+import com.mhyddnn.mubarokappmobile.core.network.TokenStore
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -26,40 +29,50 @@ import javax.inject.Singleton
 @Retention(AnnotationRetention.BINARY)
 annotation class RefreshClient
 
+/**
+ * Dua client OkHttp:
+ * - **utama** (semua API fitur + outbox): [ServerUrlInterceptor] → [AuthInterceptor] (Bearer) →
+ *   log, dengan [TokenAuthenticator] untuk 401 → refresh → ulang request.
+ * - **[RefreshClient]**: hanya `POST /auth/refresh`, tanpa Bearer & tanpa authenticator, agar 401
+ *   dari refresh tidak memicu refresh lagi (rekursi).
+ *
+ * Urutan interceptor penting: URL diganti dulu, lalu Bearer, log paling akhir supaya yang
+ * tercatat adalah request final (dengan header `Authorization` disensor).
+ */
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
+    /** Singleton: satu sumber token untuk interceptor, authenticator, dan logout. */
     @Provides
     @Singleton
-    fun provideCookieJar(@ApplicationContext context: Context): SessionCookieJar =
-        SessionCookieJar(context)
+    fun provideTokenStore(@ApplicationContext context: Context): TokenStore =
+        PrefsTokenStore(context)
 
+    /** Log client utama: BODY di debug (payload API terlihat), mati di release. */
     @Provides
     @Singleton
     fun provideLoggingInterceptor(): HttpLoggingInterceptor =
-        HttpLoggingInterceptor().apply {
-            level = if (BuildConfig.DEBUG) {
-                HttpLoggingInterceptor.Level.BODY
-            } else {
-                HttpLoggingInterceptor.Level.NONE
-            }
-        }
+        logging(HttpLoggingInterceptor.Level.BODY)
 
-    // --- Client khusus refresh (tanpa authenticator → mencegah rekursi 401) ---
+    /** Logcat bisa dibaca lewat adb / ikut tertempel di laporan bug → Bearer selalu disensor. */
+    private fun logging(debugLevel: HttpLoggingInterceptor.Level) = HttpLoggingInterceptor().apply {
+        level = if (BuildConfig.DEBUG) debugLevel else HttpLoggingInterceptor.Level.NONE
+        redactHeader(AUTHORIZATION)
+    }
+
+    // --- Client khusus refresh (tanpa authenticator & Bearer → mencegah rekursi 401) ---
 
     @Provides
     @Singleton
     @RefreshClient
     fun provideRefreshClient(
-        cookieJar: SessionCookieJar,
-        logging: HttpLoggingInterceptor,
         serverUrl: ServerUrlInterceptor,
     ): OkHttpClient =
         OkHttpClient.Builder()
-            .cookieJar(cookieJar)
             .addInterceptor(serverUrl)
-            .addInterceptor(logging)
+            // HEADERS, bukan BODY: body request & respons refresh berisi refresh_token.
+            .addInterceptor(logging(HttpLoggingInterceptor.Level.HEADERS))
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .build()
@@ -68,7 +81,7 @@ object NetworkModule {
     @Singleton
     fun provideTokenAuthenticator(
         @RefreshClient refreshClient: OkHttpClient,
-        cookieJar: SessionCookieJar,
+        tokens: TokenStore,
         sessionManager: SessionManager,
     ): TokenAuthenticator {
         val refreshApi = Retrofit.Builder()
@@ -79,26 +92,27 @@ object NetworkModule {
             .create(TokenRefreshApi::class.java)
         // Sesi lokal TIDAK dihapus (app tetap jalan offline, outbox aman) — cukup tandai
         // needsRelogin; UI menampilkan ajakan login ulang dan sinkron berhenti sampai login.
-        return TokenAuthenticator(refreshApi, onSessionExpired = {
-            cookieJar.clear()
+        // runBlocking: callback ini dipanggil di thread OkHttp (dari authenticate), bukan main.
+        return TokenAuthenticator(refreshApi, tokens, onSessionExpired = {
+            tokens.clear()
             runBlocking { sessionManager.markNeedsRelogin() }
         })
     }
 
-    // --- Client utama (dengan cookie + auto-refresh) ---
+    // --- Client utama (Bearer + auto-refresh) ---
 
     @Provides
     @Singleton
     fun provideOkHttpClient(
-        cookieJar: SessionCookieJar,
+        tokens: TokenStore,
         logging: HttpLoggingInterceptor,
         authenticator: TokenAuthenticator,
         serverUrl: ServerUrlInterceptor,
     ): OkHttpClient =
         OkHttpClient.Builder()
-            .cookieJar(cookieJar)
             .authenticator(authenticator)
             .addInterceptor(serverUrl)
+            .addInterceptor(AuthInterceptor(tokens))
             .addInterceptor(logging)
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)

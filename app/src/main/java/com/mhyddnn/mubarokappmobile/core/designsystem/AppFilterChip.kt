@@ -8,7 +8,7 @@ import androidx.compose.ui.unit.dp
 import com.composeunstyled.UnstyledButton
 import com.mhyddnn.mubarokappmobile.ui.theme.AppTheme
 
-/** Chip pilihan (mis. mode tema) — pengganti `FilterChip` M3. */
+/** Chip pilihan (sample digunakan pada mode tema) */
 @Composable
 fun AppFilterChip(
     label: String,

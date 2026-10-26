@@ -6,6 +6,9 @@
 # di-rename R8 dan terbaca null di release.
 -keep class com.mhyddnn.mubarokappmobile.core.network.ApiResponse { <fields>; <init>(...); }
 -keep class com.mhyddnn.mubarokappmobile.core.network.Meta { <fields>; <init>(...); }
+# Body & respons refresh token (TokenRefreshApi) — dipakai TokenAuthenticator di core.
+-keep class com.mhyddnn.mubarokappmobile.core.network.RefreshRequest { <fields>; <init>(...); }
+-keep class com.mhyddnn.mubarokappmobile.core.network.TokenPair { <fields>; <init>(...); }
 -keep class com.mhyddnn.mubarokappmobile.feature.**.data.** { <fields>; <init>(...); }
 
 # Gson 2.10 (transitif dari converter-gson) belum membawa aturan R8: TypeToken generik

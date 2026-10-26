@@ -11,7 +11,7 @@ import androidx.compose.ui.unit.dp
 import com.composeunstyled.UnstyledToggleSwitch
 import com.mhyddnn.mubarokappmobile.ui.theme.AppTheme
 
-/** Pengganti `Switch` M3. */
+/** Switch */
 @Composable
 fun AppSwitch(
     checked: Boolean,

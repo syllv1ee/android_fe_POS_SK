@@ -20,16 +20,25 @@ data class DashboardSummary(
     val saleCount: Int? = null,
 )
 
+/**
+ * State Beranda: sesi, menu terfilter permission, dan status sinkron. Semua turunan Flow sesi/outbox,
+ * tidak ada request jaringan. `WhileSubscribed(5_000)`: berhenti mengamati 5 dtk setelah layar
+ * tak terlihat, tapi selamat dari rotasi layar tanpa memulai ulang.
+ */
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     outboxStatus: OutboxStatus,
 ) : ViewModel() {
 
+    /** null sesaat di awal (sebelum DataStore terbaca), lalu sesi aktif. */
     val session: StateFlow<UserSession?> = authRepository.session
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
-    /** Menu yang boleh tampil untuk sesi saat ini (terfilter permission). Selalu kosong. */
+    /**
+     * Entri [dashboardMenus] yang boleh tampil untuk sesi saat ini ([has], hanya untuk tampilan —
+     * server tetap memeriksa izin). Kosong selama sesi belum terbaca.
+     */
     val menus: StateFlow<List<DashboardMenu>> = authRepository.session
         .map { session ->
             dashboardMenus.filter { menu ->
@@ -42,7 +51,7 @@ class DashboardViewModel @Inject constructor(
     val needsRelogin: StateFlow<Boolean> = authRepository.needsRelogin
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
-    /** Data buatan HP yang belum terkirim ke server. */
+    /** Data buatan HP yang belum terkirim ke server (semua fitur, termasuk yang FAILED). */
     val unsyncedCount: StateFlow<Int> = outboxStatus.unsyncedCount
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
 

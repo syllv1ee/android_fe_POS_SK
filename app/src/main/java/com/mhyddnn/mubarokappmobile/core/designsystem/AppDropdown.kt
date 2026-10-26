@@ -32,10 +32,8 @@ import com.mhyddnn.mubarokappmobile.ui.theme.AppTheme
 
 /**
  * Dropdown pilihan tunggal yang generik. [items] bisa tipe apa saja; [itemLabel]
- * menentukan teks yang ditampilkan. Cocok untuk dropdown master (customer, product, bank).
  *
- * Klik field membuka **bottom sheet** berisi daftar pilihan (bukan menu dropdown biasa) — lebih
- * nyaman dijamah untuk daftar panjang di layar sentuh.
+ * Klik field membuka **bottom sheet** berisi daftar pilihan.
  */
 @Composable
 fun <T> AppDropdown(

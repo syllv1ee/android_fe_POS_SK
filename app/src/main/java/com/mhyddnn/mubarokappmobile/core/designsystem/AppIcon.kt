@@ -12,8 +12,7 @@ import androidx.compose.ui.unit.dp
 import com.mhyddnn.mubarokappmobile.ui.theme.AppTheme
 
 /**
- * Pengganti `androidx.compose.material3.Icon` — Compose Unstyled tidak punya komponen ikon
- * bertinting, jadi ini tipis di atas `Image` + `rememberVectorPainter` Compose Foundation.
+ * Pengganti `androidx.compose.material3.Icon` | Compose Unstyled tidak punya komponen ikon
  */
 @Composable
 fun AppIcon(

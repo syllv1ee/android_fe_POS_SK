@@ -10,13 +10,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import com.mhyddnn.mubarokappmobile.ui.theme.AppTheme
 
-/**
- * Pengganti `androidx.compose.material3.Text` — tipis di atas `BasicText` Compose Foundation
- * (Compose Unstyled tidak punya komponen Text/Typography sendiri di paket `core`).
- *
- * Warna default [AppTheme.colors.onSurface] dipakai kalau [color] & `style.color` sama-sama
- * tidak diisi — foundation `BasicText` sendiri jatuh ke hitam polos, bukan warna tema.
- */
+/** Text Standar */
 @Composable
 fun AppText(
     text: String,

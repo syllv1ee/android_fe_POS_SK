@@ -9,6 +9,7 @@ import dagger.hilt.components.SingletonComponent
 import retrofit2.Retrofit
 import javax.inject.Singleton
 
+/** Hilt: [AuthRepository] → [AuthRepositoryImpl] (singleton) dan Retrofit [AuthApi]. */
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class AuthModule {

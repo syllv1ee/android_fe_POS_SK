@@ -25,6 +25,10 @@ data class LoginUiState(
     val canSubmit: Boolean get() = username.isNotBlank() && password.isNotBlank() && !loading
 }
 
+/**
+ * State form login. Username di-trim sebelum dikirim, password tidak (spasi bisa bagian password).
+ * Mengubah isian menghapus error field itu & error umum, agar pesan lama tidak menempel.
+ */
 @HiltViewModel
 class LoginViewModel @Inject constructor(
     private val authRepository: AuthRepository,

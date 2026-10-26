@@ -9,9 +9,11 @@ import com.mhyddnn.mubarokappmobile.feature.salescanvas.SalesCanvasRoutes
  * Satu item menu/pintasan di dashboard. Untuk menambah menu baru cukup tambahkan entri di
  * [dashboardMenus] — UI grid otomatis menampilkannya.
  *
- * @param route tujuan navigasi: objek rute `@Serializable` (mis. `SalesCanvasRoutes.Hub`).
- * @param requiredPermission bila diisi, menu hanya tampil bila sesi punya izin tsb (wildcard
- *        `modul:*` / `*` didukung). `null` = selalu tampil.
+ * @param id kunci stabil (unik) untuk menu ini.
+ * @param route tujuan navigasi: objek rute `@Serializable` (mis. `SalesCanvasRoutes.Hub`); rute
+ *        harus sudah didaftarkan di nav graph, atau `navigate()` crash.
+ * @param requiredPermission bila diisi, menu hanya tampil bila sesi punya izin tsb (aturan
+ *        `UserSession.has`: wildcard `modul:*` / `*`). `null` = selalu tampil.
  */
 data class DashboardMenu(
     val id: String,
@@ -21,7 +23,7 @@ data class DashboardMenu(
     val requiredPermission: String? = null,
 )
 
-/** Registri menu dashboard. */
+/** Registri menu dashboard; urutan list = urutan tampil di grid (3 kolom). */
 val dashboardMenus: List<DashboardMenu> = listOf(
     DashboardMenu(id = "sales_canvas", title = "Sales Kanvas", icon = Icons.Default.LocalShipping, route = SalesCanvasRoutes.Hub),
 )

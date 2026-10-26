@@ -4,19 +4,25 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.mhyddnn.mubarokappmobile.core.common.Page
 import com.mhyddnn.mubarokappmobile.core.common.Result
+import kotlinx.coroutines.CancellationException
 import retrofit2.Response
 import java.io.IOException
 
 private val gson = Gson()
 
 /**
- * Membungkus pemanggilan Retrofit menjadi [Result]:
- * - sukses (2xx) → [Result.Success] dengan `body.data`.
- * - error HTTP → [Result.Error] dengan `message`, `code`, dan `fieldErrors` (bila 400).
- * - kegagalan jaringan/parsing → [Result.Error] tanpa `code`.
+ * Membungkus pemanggilan Retrofit menjadi [Result] — satu-satunya pintu repository ke API.
  *
- * `data` null pada respons sukses dianggap error. Untuk endpoint tanpa payload pakai
- * [safeApiCallUnit].
+ * - 2xx → [Result.Success] berisi `body.data`; `data` null dianggap error (pakai
+ *   [safeApiCallUnit] untuk endpoint tanpa payload).
+ * - Non-2xx → [Result.Error] dengan `code`, `message` dari envelope (atau [defaultMessage]), dan
+ *   `fieldErrors` dari `errors` (kunci = path Zod digabung titik, lihat [fieldErrorsOf]).
+ *   401 baru sampai sini setelah [TokenAuthenticator] gagal me-refresh.
+ * - `IOException` (tanpa sinyal, timeout) → [Result.Error] tanpa `code`; exception lain juga tanpa
+ *   `code`, pesan generik, detail di `cause`.
+ * - `CancellationException` TIDAK ditangkap: dilempar ulang agar pembatalan coroutine tetap jalan.
+ *
+ * Tidak berganti thread: Retrofit `suspend` sudah menjalankan I/O di thread OkHttp.
  */
 suspend fun <T : Any> safeApiCall(block: suspend () -> Response<ApiResponse<T>>): Result<T> =
     apiCall(block) { body, code ->
@@ -48,7 +54,10 @@ suspend fun <T> safeApiCallPaged(
     )
 }
 
-/** Kerangka bersama: [onSuccess] hanya menangani respons 2xx; error HTTP & exception di sini. */
+/**
+ * Kerangka bersama ketiga varian: [onSuccess] hanya menerima respons 2xx (body bisa null);
+ * error HTTP & exception diseragamkan di sini agar aturan di [safeApiCall] berlaku sama.
+ */
 private suspend fun <T, R> apiCall(
     block: suspend () -> Response<ApiResponse<T>>,
     onSuccess: (body: ApiResponse<T>?, code: Int) -> Result<R>,
@@ -60,14 +69,22 @@ private suspend fun <T, R> apiCall(
         val error = parseError(response)
         Result.Error(error.message, response.code(), error.fieldErrors)
     }
+} catch (e: CancellationException) {
+    throw e // pembatalan (layar ditutup / timeout) harus tetap membatalkan pemanggil
 } catch (e: IOException) {
     Result.Error("Gagal terhubung ke server. Periksa koneksi Anda.", cause = e)
 } catch (e: Exception) {
-    Result.Error(e.message ?: "Terjadi kesalahan tak terduga", cause = e)
+    // Pesan exception (mis. error parsing Gson) tidak untuk user; detail tetap di `cause`.
+    Result.Error("Terjadi kesalahan tak terduga", cause = e)
 }
 
 private data class ParsedError(val message: String, val fieldErrors: Map<String, String>?)
 
+/**
+ * Baca envelope error (`message` + `errors`) dari body non-2xx. `errorBody()` adalah stream sekali
+ * baca — jangan dibaca lagi di tempat lain. Body kosong / bukan JSON (mis. halaman error proxy)
+ * → [defaultMessage] tanpa field error.
+ */
 private fun parseError(response: Response<*>): ParsedError {
     val raw = response.errorBody()?.string().orEmpty()
     val fallback = defaultMessage(response.code())
@@ -75,12 +92,13 @@ private fun parseError(response: Response<*>): ParsedError {
     return try {
         val type = object : TypeToken<ApiResponse<Any>>() {}.type
         val parsed: ApiResponse<Any>? = gson.fromJson(raw, type)
-        ParsedError(parsed?.message?.takeIf { it.isNotBlank() } ?: fallback, parsed?.errors)
+        ParsedError(parsed?.message?.takeIf { it.isNotBlank() } ?: fallback, fieldErrorsOf(parsed?.errors))
     } catch (_: Exception) {
         ParsedError(fallback, null)
     }
 }
 
+/** Pesan untuk user bila server tidak mengirim `message`. */
 private fun defaultMessage(code: Int): String = when (code) {
     401 -> "Sesi berakhir. Silakan login ulang."
     403 -> "Anda tidak memiliki izin untuk aksi ini."

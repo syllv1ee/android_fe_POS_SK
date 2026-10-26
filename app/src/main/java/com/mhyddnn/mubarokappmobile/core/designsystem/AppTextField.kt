@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.dp
 import com.mhyddnn.mubarokappmobile.ui.theme.AppTheme
 
 /**
- * Field teks seragam: label, placeholder, pesan error, dan dukungan single-line.
+ * Field teks: label, placeholder, error message, dan dukungan single-line.
  * [errorText] non-null akan menandai field merah + menampilkan pesan di bawahnya.
  * Saat [isPassword] true, teks disembunyikan dan muncul ikon mata untuk toggle tampil/sembunyi.
  */

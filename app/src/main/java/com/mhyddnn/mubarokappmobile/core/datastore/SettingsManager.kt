@@ -10,14 +10,15 @@ import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** Mode tema yang dipilih user — independen dari tema sistem HP. */
+/** Mode tema yang dipilih user */
 enum class ThemeMode { SYSTEM, LIGHT, DARK }
 
 private val Context.settingsDataStore by preferencesDataStore(name = "settings")
 
 /**
- * Preferensi aplikasi non-sesi (bertahan walau logout). Saat ini hanya mode tema. Memakai
- * DataStore Preferences — tepat untuk setting kecil; SQLite/Room dicadangkan untuk cache offline.
+ * Preferensi aplikasi non-sesi (file `settings`, terpisah dari `session` agar tetap ada walau
+ * logout): mode tema dan override URL server (dev). DataStore Preferences — tepat untuk setting
+ * kecil; Room dipakai untuk cache & outbox.
  */
 @Singleton
 class SettingsManager @Inject constructor(
@@ -28,6 +29,7 @@ class SettingsManager @Inject constructor(
         val SERVER_URL = stringPreferencesKey("server_base_url")
     }
 
+    /** Disimpan sebagai nama enum; nilai tak dikenal -> [ThemeMode.SYSTEM]. */
     val themeMode: Flow<ThemeMode> = context.settingsDataStore.data.map { prefs ->
         runCatching { ThemeMode.valueOf(prefs[Keys.THEME_MODE] ?: ThemeMode.SYSTEM.name) }
             .getOrDefault(ThemeMode.SYSTEM)
@@ -38,12 +40,14 @@ class SettingsManager @Inject constructor(
     }
 
     /**
-     * Override URL server (DEV) — bila diisi, dipakai menggantikan host BASE_URL. `null`/kosong
-     * berarti pakai default `BuildConfig.BASE_URL`.
+     * Override URL server (DEV) | bila diisi, scheme/host/port-nya menggantikan BASE_URL lewat
+     * [com.mhyddnn.mubarokappmobile.core.network.ServerUrlInterceptor] (hanya build debug).
+     * `null`/kosong berarti pakai default `BuildConfig.BASE_URL`.
      */
     val serverBaseUrl: Flow<String?> =
         context.settingsDataStore.data.map { it[Keys.SERVER_URL]?.takeIf(String::isNotBlank) }
 
+    /** Kosong/null = hapus override. */
     suspend fun setServerBaseUrl(url: String?) {
         context.settingsDataStore.edit { prefs ->
             val trimmed = url?.trim().orEmpty()

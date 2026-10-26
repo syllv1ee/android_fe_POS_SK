@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+/** Profil: baca sesi (tanpa request), ubah tema (langsung berlaku di seluruh app), logout. */
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     private val authRepository: AuthRepository,
@@ -25,11 +26,15 @@ class ProfileViewModel @Inject constructor(
     val themeMode: StateFlow<ThemeMode> = settingsManager.themeMode
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ThemeMode.SYSTEM)
 
+    /** Disimpan ke DataStore; `MainViewModel` mengamati nilai yang sama → tema berganti seketika. */
     fun setThemeMode(mode: ThemeMode) {
         viewModelScope.launch { settingsManager.setThemeMode(mode) }
     }
 
-    /** Sesi dibersihkan → MainActivity (mengamati isLoggedIn) otomatis kembali ke Login. */
+    /**
+     * Sesi dibersihkan → MainActivity (mengamati isLoggedIn) otomatis kembali ke Login. Paling
+     * lama ±3 dtk (batas request logout ke server); offline tetap berhasil.
+     */
     fun logout() {
         viewModelScope.launch { authRepository.logout() }
     }

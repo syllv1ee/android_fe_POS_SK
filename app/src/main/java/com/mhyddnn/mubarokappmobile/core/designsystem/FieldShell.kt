@@ -16,9 +16,8 @@ import com.mhyddnn.mubarokappmobile.ui.theme.AppTheme
 
 /**
  * Kerangka visual field bergaya "outlined" (label di atas, kotak berbatas, pesan error di
- * bawah) — dipakai [AppTextField], [MoneyInputField]/[QuantityInputField], [AppDropdown], dan
- * [AppDatePickerField] agar tampilan seragam. Pengganti `OutlinedTextField` M3 (yang tidak ada
- * padanannya di Compose Unstyled).
+ * bawah) | digunakan pada [AppTextField], [MoneyInputField]/[QuantityInputField], [AppDropdown], dan
+ * [AppDatePickerField].
  */
 @Composable
 internal fun FieldShell(

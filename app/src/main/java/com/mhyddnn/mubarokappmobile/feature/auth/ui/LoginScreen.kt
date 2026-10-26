@@ -29,6 +29,15 @@ import com.mhyddnn.mubarokappmobile.core.designsystem.AppTextField
 import com.mhyddnn.mubarokappmobile.ui.theme.AppTheme
 import com.composeunstyled.UnstyledButton
 
+/**
+ * Layar login, dipakai di dua keadaan:
+ * - **Login awal**: host navigasi Login; setelah sukses `MainActivity` menukar host ke Home sendiri
+ *   (mengamati `isLoggedIn`), [onLoggedIn] tidak perlu menavigasi.
+ * - **Login ulang** (needsRelogin, dibuka dari Dashboard): sesi masih ada, jadi [onLoggedIn]
+ *   menutup layar ini kembali ke layar asal. Username terisi otomatis dari sesi.
+ *
+ * Tombol "Atur Server (Dev)" hanya ada di build debug.
+ */
 @Composable
 fun LoginScreen(
     onLoggedIn: () -> Unit = {},

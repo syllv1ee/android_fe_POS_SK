@@ -14,6 +14,10 @@ import javax.inject.Singleton
  * Interceptor DEV: menukar scheme/host/port tiap request ke override URL server dari setting app
  * ([SettingsManager.serverBaseUrl]) — memungkinkan ganti IP tanpa rebuild. Path/query asli
  * (`/api/...`) dipertahankan. Aktif hanya di build DEBUG; release selalu pakai BASE_URL.
+ *
+ * Dipasang PERTAMA di kedua client (utama & refresh) agar interceptor berikutnya dan log melihat
+ * URL akhir. `runBlocking` aman: berjalan di thread OkHttp, dan DataStore menyimpan nilai terakhir
+ * di memori sehingga pembacaan setelah yang pertama tidak menyentuh disk.
  */
 @Singleton
 class ServerUrlInterceptor @Inject constructor(

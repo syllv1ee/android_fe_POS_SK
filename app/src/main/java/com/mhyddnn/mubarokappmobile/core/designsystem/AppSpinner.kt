@@ -17,10 +17,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
-/**
- * Spinner loading indeterminate — pengganti `CircularProgressIndicator` M3. Compose Unstyled
- * hanya menyediakan progress bar *determinate* (nilai 0..1), jadi busur berputar ini custom.
- */
+/** Spinner loading */
 @Composable
 fun AppSpinner(
     color: Color,

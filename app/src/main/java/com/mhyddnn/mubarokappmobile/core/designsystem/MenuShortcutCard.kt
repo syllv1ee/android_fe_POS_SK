@@ -21,10 +21,7 @@ import com.mhyddnn.mubarokappmobile.ui.theme.AppTheme
 
 private val CardPadding = PaddingValues(16.dp)
 
-/**
- * Kartu pintasan menu untuk dashboard: ikon di dalam wadah berwarna + label di bawahnya.
- * Domain-agnostik & dapat diklik. Dipakai grid menu (lihat dashboard).
- */
+/** Kartu pintasan menu untuk dashboard. */
 @Composable
 fun MenuShortcutCard(
     label: String,

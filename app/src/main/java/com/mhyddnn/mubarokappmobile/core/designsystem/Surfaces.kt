@@ -11,14 +11,11 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
-/** Radius standar kartu/field di seluruh app — pengganti `MaterialTheme.shapes` M3. */
+/** Radius standar */
 val CardShape: Shape = RoundedCornerShape(12.dp)
 val FieldShape: Shape = RoundedCornerShape(8.dp)
 
-/**
- * Pengganti `Surface`/`Card` M3: latar warna + sudut membulat, dengan bayangan/border opsional.
- * Dipakai lewat modifier chain, mis. `Modifier.surface(color = AppTheme.colors.surface)`.
- */
+/** Card */
 fun Modifier.surface(
     color: Color,
     shape: Shape = CardShape,

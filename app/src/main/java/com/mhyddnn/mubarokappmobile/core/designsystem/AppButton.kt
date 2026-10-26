@@ -68,7 +68,7 @@ fun AppSecondaryButton(
     }
 }
 
-/** Tombol teks polos (tanpa latar/border) — pengganti `TextButton` M3, dipakai di dialog. */
+/** Tombol teks polos (tanpa latar/border). */
 @Composable
 fun AppTextButton(
     text: String,

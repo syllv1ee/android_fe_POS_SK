@@ -12,7 +12,7 @@ import com.mhyddnn.mubarokappmobile.ui.theme.LightStatusPalette
 import com.mhyddnn.mubarokappmobile.ui.theme.StatusToneColors
 
 /**
- * Nada warna semantik untuk [StatusChip]. Domain-agnostik: layer fitur yang memetakan
+ * Warna untuk [StatusChip]. Domain-agnostik: layer fitur yang memetakan
  * status (mis. plan DISETUJUI, transaksi KREDIT) ke salah satu nada ini.
  */
 enum class StatusTone {

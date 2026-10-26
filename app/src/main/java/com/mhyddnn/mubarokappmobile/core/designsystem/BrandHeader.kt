@@ -21,7 +21,7 @@ import com.mhyddnn.mubarokappmobile.ui.theme.AppTheme
 
 /**
  * Header brand melengkung (maroon) yang menembus status bar — dipakai sebagai "top bar" kaya
- * pada Dashboard & Profil agar konsisten. Menyediakan baris atas (back opsional + judul opsional
+ * Menyediakan baris atas (back opsional + judul opsional
  * + [actions]) lalu slot [content] (mis. sapaan / identitas). Bagian bawah diberi ruang ekstra
  * agar konten berikutnya bisa "mengambang" menimpa header (pakai offset negatif di pemanggil).
  */

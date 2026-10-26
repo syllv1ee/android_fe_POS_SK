@@ -42,7 +42,7 @@ private val IdLocale = Locale("in", "ID")
 
 /**
  * Field tanggal yang membuka kalender custom (grid bulan) dibungkus dialog Compose Unstyled.
- * Nilai keluar/masuk berupa string `YYYY-MM-DD` (format yang diminta backend). Ditampilkan ke
+ * Nilai keluar/masuk berupa string `YYYY-MM-DD`. Ditampilkan ke
  * user sebagai "dd MMM yyyy".
  */
 @Composable
