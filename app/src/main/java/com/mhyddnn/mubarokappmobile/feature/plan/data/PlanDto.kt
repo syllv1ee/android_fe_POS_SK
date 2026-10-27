@@ -15,16 +15,11 @@ import com.mhyddnn.mubarokappmobile.feature.plan.domain.PlanOption
 import com.mhyddnn.mubarokappmobile.feature.plan.domain.PlanPersonnel
 import com.mhyddnn.mubarokappmobile.feature.plan.domain.PlanProduct
 
-/** `GET /plan`: beda dari sale, `items` + `meta` ada DI DALAM `data`. */
 data class PlanPageDto(
     val items: List<PlanDto>? = null,
     val meta: Meta? = null,
 )
 
-/**
- * Objek plan (endpoint_plan.md §2), hanya field yang ditampilkan. List sengaja nullable:
- * Gson tidak memakai default Kotlin, key yang hilang terbaca null. `price` dikirim STRING (Decimal).
- */
 data class PlanDto(
     val id: Int,
     val invoice: String,
@@ -179,7 +174,7 @@ fun OutboxEntity.toPendingPlan(master: PlanMasterData?): PendingPlan {
 }
 
 /**
- * Path outbox `plan/{id}/update-status` → id plan-nya. Bergantung pada format path yang ditulis
+ * Path outbox `plan/{id}/update-status` -> id plan-nya. Bergantung pada format path yang ditulis
  * `PlanRepositoryImpl.updateStatus` — ubah keduanya bersamaan.
  */
 fun OutboxEntity.toPendingPlanStatus(): PendingPlanStatus = PendingPlanStatus(

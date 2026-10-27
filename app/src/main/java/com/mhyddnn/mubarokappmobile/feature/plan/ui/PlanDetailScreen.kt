@@ -38,8 +38,7 @@ import com.mhyddnn.mubarokappmobile.ui.theme.AppTheme
 import java.math.BigDecimal
 
 /**
- * Detail plan + ubah status. Status yang tampil = perubahan terbaru yang masih antre, atau status
- * server ([displayStatus]); antrean milik plan ini tampil sebagai banner di atas.
+ * Detail plan + ubah status
  */
 @Composable
 fun PlanDetailScreen(
@@ -145,7 +144,7 @@ private fun PlanDetailContent(
  * Tombol ke setiap status selain [current] (BE tidak membatasi urutan transisi), dengan konfirmasi.
  * Hanya mengantrekan perubahan; pengiriman oleh SyncWorker.
  */
-// ponytail: belum disaring permission `plan:write` — server menolak 403 dan item tampil "ditolak".
+// belum ada permission `plan:write` | sementara tidak perlu dulu".
 @Composable
 private fun StatusActions(current: String, onChangeStatus: (String) -> Unit) {
     var target by remember { mutableStateOf<String?>(null) }
@@ -185,11 +184,11 @@ private fun PendingStatusBanner(
     val label = PlanStatusUi.status(pending.status).text
     val failed = pending.failedMessage
     if (failed == null) {
-        NoticeBanner(text = "Status → $label menunggu sinkron.", tone = StatusTone.Warning)
+        NoticeBanner(text = "Status : $label menunggu sinkron.", tone = StatusTone.Warning)
         return
     }
     Column {
-        NoticeBanner(text = "Status → $label ditolak server: $failed", tone = StatusTone.Danger)
+        NoticeBanner(text = "Status : $label ditolak server: $failed", tone = StatusTone.Danger)
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
             AppTextButton(text = "Buang", onClick = { onDiscard(pending.id) }, color = AppTheme.colors.error)
             AppTextButton(text = "Kirim ulang", onClick = { onRetry(pending.id) })

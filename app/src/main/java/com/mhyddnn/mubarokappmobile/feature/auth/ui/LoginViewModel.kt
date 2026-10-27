@@ -27,7 +27,7 @@ data class LoginUiState(
 
 /**
  * State form login. Username di-trim sebelum dikirim, password tidak (spasi bisa bagian password).
- * Mengubah isian menghapus error field itu & error umum, agar pesan lama tidak menempel.
+ * Mengubah isian menghapus error field itu & error umum, agar pesan lama tidak ada lagi.
  */
 @HiltViewModel
 class LoginViewModel @Inject constructor(
@@ -38,7 +38,7 @@ class LoginViewModel @Inject constructor(
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
 
     init {
-        // Login ulang (token habis): sesi lokal masih ada → isi username pemilik data antrean.
+        // Login ulang (token habis): sesi lokal masih ada -> isi username pemilik data antrean.
         viewModelScope.launch {
             authRepository.session.first()?.let { s -> _uiState.update { it.copy(username = s.username) } }
         }

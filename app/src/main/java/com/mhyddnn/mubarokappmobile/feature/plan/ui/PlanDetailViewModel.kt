@@ -50,7 +50,7 @@ class PlanDetailViewModel @Inject constructor(
                 val list = all.filter { p -> p.planId == planId }
                 val delivered = deliveredStatuses(before = _uiState.value.pending, after = list)
                 _uiState.update { it.copy(pending = list, plan = it.plan?.withDelivered(delivered)) }
-                // Sudah diterima server → ambil detail terbaru (juga memperbarui cache untuk offline).
+                // Sudah diterima server -> ambil detail terbaru (juga memperbarui cache untuk offline).
                 if (delivered.isNotEmpty()) load()
             }
             .launchIn(viewModelScope)

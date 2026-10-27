@@ -3,15 +3,14 @@ package com.mhyddnn.mubarokappmobile.feature.auth.data
 import com.google.gson.annotations.SerializedName
 
 /**
- * Body `POST /auth/login`. Password dikirim apa adanya — keamanannya bergantung pada HTTPS
- * (release hanya mengizinkan HTTPS, lihat `network_security_config.xml`).
+ * Body `POST /auth/login`.
  */
 data class LoginRequest(
     val username: String,
     val password: String,
 )
 
-/** Payload `data` dari login: token di body (sales-kanvas-be tidak memakai cookie) + user. */
+/** Payload `data` dari login: token di body + user. */
 data class LoginData(
     @SerializedName("access_token") val accessToken: String,
     @SerializedName("refresh_token") val refreshToken: String,
@@ -19,10 +18,7 @@ data class LoginData(
 )
 
 /**
- * `data` dari `GET /auth/me` dan `data.user` dari login (`toSafeUser()` di BE): permission
- * dikirim flat, role hanya `{ id, name }`.
- *
- * Catatan: tanggal (`last_login_at`, dst.) sengaja tidak dipetakan — app tidak memakainya.
+ * `data` dari `GET /auth/me`
  */
 data class UserDto(
     val id: Int,
@@ -36,5 +32,5 @@ data class UserDto(
 /** Role user; `id`/`name` dipakai untuk deteksi Super Admin (`isSuperAdminRole`). */
 data class RoleRef(val id: Int, val name: String)
 
-/** Satu permission; hanya `name` (mis. `plan:write`) yang disimpan ke sesi. */
+/** Permission */
 data class PermissionRef(val id: Int, val name: String)

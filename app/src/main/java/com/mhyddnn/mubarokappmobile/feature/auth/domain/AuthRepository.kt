@@ -4,13 +4,9 @@ import com.mhyddnn.mubarokappmobile.core.common.Result
 import com.mhyddnn.mubarokappmobile.core.datastore.UserSession
 import kotlinx.coroutines.flow.Flow
 
-/**
- * Login, logout, dan status sesi. Semua Flow berasal dari `SessionManager` (DataStore): memancarkan
- * nilai awal lalu setiap kali sesi berubah, tidak pernah selesai.
- */
 interface AuthRepository {
 
-    /** Menentukan host navigasi di `MainActivity` (Login vs Home). */
+    /** Menentukan navigasi di `MainActivity`. */
     val isLoggedIn: Flow<Boolean>
 
     /** Profil user aktif; null bila belum login. */

@@ -7,18 +7,11 @@ import com.mhyddnn.mubarokappmobile.core.datastore.has
 import com.mhyddnn.mubarokappmobile.core.sync.OutboxStatus
 import com.mhyddnn.mubarokappmobile.feature.auth.domain.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
-
-/** Ringkasan singkat untuk kartu di dashboard (build ini tidak hit data apa pun). */
-data class DashboardSummary(
-    val tripCount: Int? = null,
-    val saleCount: Int? = null,
-)
 
 /**
  * State Beranda: sesi, menu terfilter permission, dan status sinkron. Semua turunan Flow sesi/outbox,
@@ -54,7 +47,4 @@ class DashboardViewModel @Inject constructor(
     /** Data buatan HP yang belum terkirim ke server (semua fitur, termasuk yang FAILED). */
     val unsyncedCount: StateFlow<Int> = outboxStatus.unsyncedCount
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
-
-    /** Statis — build ini tidak punya modul lain untuk dihitung. */
-    val summary: StateFlow<DashboardSummary> = MutableStateFlow(DashboardSummary())
 }

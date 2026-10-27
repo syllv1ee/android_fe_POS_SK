@@ -5,7 +5,7 @@ import com.mhyddnn.mubarokappmobile.core.designsystem.StatusTone
 import com.mhyddnn.mubarokappmobile.feature.plan.domain.PlanStatus
 
 /**
- * Status plan (raw backend) → [ChipSpec]. Case-insensitive; status baru dari BE yang belum dikenal
+ * Status plan (raw backend) -> [ChipSpec]. Case-insensitive; status baru dari BE yang belum dikenal
  * tetap tampil dengan teks aslinya (netral), tidak crash.
  */
 object PlanStatusUi {

@@ -8,7 +8,8 @@ import androidx.room.Transaction
 import androidx.room.Upsert
 
 /**
- * Cache plan dari server, per user — dipakai saat offline (daftar + detail).
+ * Cache plan dari server, per user - dipakai saat offline (daftar + detail).
+ * Jika offline data tetap bisa di akses.
  */
 @Entity(tableName = "plan_cache", primaryKeys = ["owner", "id"])
 data class PlanEntity(
@@ -41,7 +42,7 @@ interface PlanDao {
     @Query("DELETE FROM plan_cache WHERE owner = :owner")
     suspend fun clear(owner: String)
 
-    /** Halaman 1 sukses = data terbaru → ganti seluruh cache user ini. */
+    /** Halaman 1 sukses = data terbaru -> ganti seluruh cache user ini. */
     @Transaction
     suspend fun replace(owner: String, items: List<PlanEntity>) {
         clear(owner)

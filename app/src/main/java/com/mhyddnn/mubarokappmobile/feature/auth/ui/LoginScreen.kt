@@ -31,12 +31,11 @@ import com.composeunstyled.UnstyledButton
 
 /**
  * Layar login, dipakai di dua keadaan:
- * - **Login awal**: host navigasi Login; setelah sukses `MainActivity` menukar host ke Home sendiri
- *   (mengamati `isLoggedIn`), [onLoggedIn] tidak perlu menavigasi.
+ * - **Login awal**: host navigasi Login; setelah sukses `MainActivity` di redirect ke Home
  * - **Login ulang** (needsRelogin, dibuka dari Dashboard): sesi masih ada, jadi [onLoggedIn]
  *   menutup layar ini kembali ke layar asal. Username terisi otomatis dari sesi.
  *
- * Tombol "Atur Server (Dev)" hanya ada di build debug.
+ * Tombol "Atur Server (Dev)" hanya ada di build debug [mengatur ip server].
  */
 @Composable
 fun LoginScreen(
@@ -63,7 +62,7 @@ fun LoginScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         AppText(
-            text = "My Mubarok Mobile",
+            text = "Sales Mubarok Mobile",
             style = AppTheme.typography.headlineSmall,
         )
 

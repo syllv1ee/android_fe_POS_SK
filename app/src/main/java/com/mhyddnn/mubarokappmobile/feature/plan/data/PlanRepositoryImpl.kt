@@ -33,7 +33,7 @@ private const val KIND_PLAN_STATUS = "plan-status"
 private const val KIND_PLAN_CREATE = "plan-create"
 
 /**
- * Gagal karena sinyal / server / sesi — bukan karena isi data → aman diantrekan ke outbox.
+ * Gagal karena sinyal / server / sesi  bukan karena isi data akan masuk ke outbox.
  * Penolakan isi (400 validasi, 403, 409) tetap ditampilkan di form agar bisa langsung dibetulkan.
  */
 internal fun Result.Error.isTransient(): Boolean =
@@ -42,8 +42,8 @@ internal fun Result.Error.isTransient(): Boolean =
 /**
  * Sumber data plan untuk semua layar plan.
  *
- * - **Baca** (daftar/detail/master): selalu coba server dulu; sukses → cache Room per user
- *   (`plan_cache`, `plan_master_cache`). Gagal → ViewModel memakai `cached*()` / master tersimpan.
+ * - **Baca** (daftar/detail/master): selalu coba server dulu; sukses -> cache Room per user
+ *   (`plan_cache`, `plan_master_cache`). Gagal -> ViewModel memakai `cached*()` / master tersimpan.
  * - **Ubah status**: SELALU lewat outbox, juga saat online — satu jalur, sehingga UI cukup
  *   membaca [pendingStatuses] untuk menampilkan "Belum terkirim".
  * - **Buat plan**: online dulu, gagal sementara → outbox (lihat [createPlan]).

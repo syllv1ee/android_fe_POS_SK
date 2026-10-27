@@ -23,7 +23,7 @@ data class DashboardMenu(
     val requiredPermission: String? = null,
 )
 
-/** Registri menu dashboard; urutan list = urutan tampil di grid (3 kolom). */
+/** menu dashboard; urutan list = urutan tampil di grid (3 kolom). */
 val dashboardMenus: List<DashboardMenu> = listOf(
     DashboardMenu(id = "sales_canvas", title = "Sales Kanvas", icon = Icons.Default.LocalShipping, route = SalesCanvasRoutes.Hub),
 )

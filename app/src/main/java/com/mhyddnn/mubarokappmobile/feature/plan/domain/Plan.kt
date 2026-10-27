@@ -1,6 +1,5 @@
 package com.mhyddnn.mubarokappmobile.feature.plan.domain
 
-/** Plan sales kanvas (endpoint_plan.md §2). Tanggal string ISO (format di UI). */
 data class Plan(
     val id: Int,
     val invoice: String,
@@ -59,7 +58,6 @@ data class PendingPlan(
     val failedMessage: String?,
 )
 
-/** Input buat plan baru (endpoint_plan.md §3). Tanggal `YYYY-MM-DD`. */
 data class NewPlan(
     val invoiceDate: String,
     val departDate: String,

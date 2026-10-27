@@ -9,7 +9,7 @@ import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
 
-/** Baca butuh `plan:read`, buat `plan:write`. Update-status (dan buat plan saat offline) lewat outbox. */
+/** Baca butuh `plan:read`, buat `plan:write`. */
 interface PlanApi {
 
     @GET("plan")
@@ -22,8 +22,8 @@ interface PlanApi {
     suspend fun getPlan(@Path("id") id: Int): Response<ApiResponse<PlanDto>>
 
     /**
-     * Dicoba online dulu (error validasi tampil di form); gagal karena sinyal → outbox dengan
-     * [idempotencyKey] yang sama, jadi kiriman ulang tidak membuat plan dobel (endpoint_plan.md).
+     * Dicoba online dulu (error validasi tampil di form); gagal karena sinyal -> outbox dengan
+     * [idempotencyKey] yang sama, jadi kiriman ulang tidak membuat plan dobel.
      */
     @POST("plan")
     suspend fun createPlan(

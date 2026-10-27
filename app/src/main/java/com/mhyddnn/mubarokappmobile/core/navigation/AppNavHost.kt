@@ -17,8 +17,6 @@ fun AppNavHost(
 ) {
     NavHost(navController = navController, startDestination = startDestination) {
         composable<Routes.Login> {
-            // Login awal: MainActivity menukar host saat isLoggedIn berubah. Login ulang (token
-            // habis, dibuka dari Dashboard): sesi sudah ada, jadi kembali sendiri ke layar asal.
             LoginScreen(onLoggedIn = {
                 if (navController.previousBackStackEntry != null) navController.popBackStack()
             })
