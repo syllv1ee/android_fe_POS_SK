@@ -10,7 +10,7 @@ import com.mhyddnn.mubarokappmobile.core.network.safeApiCall
 import com.mhyddnn.mubarokappmobile.core.sync.OutboxDao
 import com.mhyddnn.mubarokappmobile.core.sync.OutboxEntity
 import com.mhyddnn.mubarokappmobile.core.sync.SyncScheduler
-import com.mhyddnn.mubarokappmobile.core.sync.SyncWorker
+import com.mhyddnn.mubarokappmobile.core.sync.isTransient
 import com.mhyddnn.mubarokappmobile.feature.plan.domain.CreatePlanOutcome
 import com.mhyddnn.mubarokappmobile.feature.plan.domain.NewPlan
 import com.mhyddnn.mubarokappmobile.feature.plan.domain.PendingPlan
@@ -31,13 +31,6 @@ import javax.inject.Inject
 
 private const val KIND_PLAN_STATUS = "plan-status"
 private const val KIND_PLAN_CREATE = "plan-create"
-
-/**
- * Gagal karena sinyal / server / sesi  bukan karena isi data akan masuk ke outbox.
- * Penolakan isi (400 validasi, 403, 409) tetap ditampilkan di form agar bisa langsung dibetulkan.
- */
-internal fun Result.Error.isTransient(): Boolean =
-    code == null || SyncWorker.outcomeOf(code) in setOf(SyncWorker.SendOutcome.RETRY, SyncWorker.SendOutcome.AUTH)
 
 /**
  * Sumber data plan untuk semua layar plan.

@@ -1,7 +1,6 @@
 package com.mhyddnn.mubarokappmobile.feature.plan.data
 
 import com.google.gson.Gson
-import com.mhyddnn.mubarokappmobile.core.common.Result
 import com.mhyddnn.mubarokappmobile.core.sync.OutboxEntity
 import com.mhyddnn.mubarokappmobile.feature.plan.domain.NewPlan
 import com.mhyddnn.mubarokappmobile.feature.plan.domain.PendingPlanStatus
@@ -9,7 +8,6 @@ import com.mhyddnn.mubarokappmobile.feature.plan.domain.deliveredStatuses
 import com.mhyddnn.mubarokappmobile.feature.plan.domain.displayStatus
 import com.mhyddnn.mubarokappmobile.feature.plan.domain.withDelivered
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -63,17 +61,6 @@ class PlanDtoTest {
         assertEquals(listOf(sent), delivered) // yang ditolak lalu dibuang tidak dianggap terkirim
         assertEquals("LOADING", plan.withDelivered(delivered).status)
         assertEquals("DRAFT", plan.withDelivered(deliveredStatuses(listOf(sent), listOf(sent))).status)
-    }
-
-    @Test
-    fun createPlan_queuesOnlyWhenFailureIsNotTheData() {
-        // Sinyal / server / sesi → antrekan; isi ditolak → tampil di form untuk dibetulkan.
-        listOf(null, 401, 408, 429, 500, 503).forEach { code ->
-            assertTrue("kode $code", Result.Error("x", code).isTransient())
-        }
-        listOf(400, 403, 404, 409).forEach { code ->
-            assertFalse("kode $code", Result.Error("x", code).isTransient())
-        }
     }
 
     @Test

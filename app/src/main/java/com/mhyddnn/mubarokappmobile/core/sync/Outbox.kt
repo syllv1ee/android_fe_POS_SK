@@ -6,6 +6,7 @@ import androidx.room.Entity
 import androidx.room.Insert
 import androidx.room.PrimaryKey
 import androidx.room.Query
+import com.mhyddnn.mubarokappmobile.core.common.Result
 import com.mhyddnn.mubarokappmobile.core.datastore.SessionManager
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -105,6 +106,14 @@ interface OutboxDao {
     @Query("SELECT COUNT(*) FROM outbox WHERE owner = :owner")
     fun observeCount(owner: String): Flow<Int>
 }
+
+/**
+ * Gagal karena sinyal / server / sesi — bukan karena isi data → boleh masuk outbox. Penolakan isi
+ * (400 validasi, 403, 409) tetap ditampilkan di form agar bisa langsung dibetulkan. Aturan kodenya
+ * sama dengan [SyncWorker.outcomeOf], jadi form dan worker tidak pernah berbeda pendapat.
+ */
+internal fun Result.Error.isTransient(): Boolean =
+    code == null || SyncWorker.outcomeOf(code) in setOf(SyncWorker.SendOutcome.RETRY, SyncWorker.SendOutcome.AUTH)
 
 /**
  * Jumlah data user aktif yang belum diterima server (untuk badge/banner lintas fitur). Ikut
