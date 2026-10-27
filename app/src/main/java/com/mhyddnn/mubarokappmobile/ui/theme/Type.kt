@@ -5,12 +5,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
-/**
- * Tipografi aplikasi — pengganti `androidx.compose.material3.Typography`.
- * Hanya style yang benar-benar dipakai di layar (lihat pemakaian `AppTheme.typography.*`).
- * Nilai baseline mengikuti skala tipe Material 3 (Roboto), judul & label ditebalkan agar
- * hierarki (header, judul kartu, judul section) lebih tegas — sama seperti sebelumnya.
- */
+/** Tipografi */
 data class AppTypography(
     val headlineSmall: TextStyle,
     val titleLarge: TextStyle,

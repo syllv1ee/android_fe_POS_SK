@@ -15,7 +15,7 @@ class MubarokApp : Application() {
     override fun onCreate() {
         super.onCreate()
         // Sisa antrean dari sesi sebelumnya ikut dikirim begitu ada sinyal. KEEP: work yang sudah
-        // menunggu jaringan dipakai ulang, tidak ditambah satu rantai per buka app.
+        // menunggu jaringan dipakai ulang.
         syncScheduler.schedule(ExistingWorkPolicy.KEEP)
     }
 }

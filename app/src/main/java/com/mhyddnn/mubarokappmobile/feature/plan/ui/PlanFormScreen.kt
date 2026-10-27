@@ -38,12 +38,11 @@ import com.mhyddnn.mubarokappmobile.feature.plan.domain.PlanMasterData
 import com.mhyddnn.mubarokappmobile.feature.plan.domain.PlanOption
 import com.mhyddnn.mubarokappmobile.ui.theme.AppTheme
 
-/** Posisi personil, sama dengan sales-kanvas-fe. BE menerima string bebas. */
+/** Posisi personil */
 private val Positions = listOf("Sopir", "Sales", "Helper")
 
 /**
- * Form tambah plan. [onCreated] (id plan dari server) dan [onQueued] (tersimpan di antrean)
- * dipanggil sekali lewat `LaunchedEffect` saat state berubah — navigasi tetap milik pemanggil.
+ * Form tambah plan. [onCreated] (id plan dari server) dan [onQueued] (tersimpan di antrean).
  */
 @Composable
 fun PlanFormScreen(
@@ -65,7 +64,7 @@ fun PlanFormScreen(
         when {
             state.isLoading -> LoadingView(contentModifier)
             master == null -> ErrorView(
-                message = state.loadError ?: "Gagal memuat data master",
+                message = state.loadError ?: "Gagal memuat data",
                 modifier = contentModifier,
                 onRetry = viewModel::loadMaster,
             )
@@ -240,7 +239,7 @@ private fun PlanFormContent(
     }
 }
 
-/** Kartu berisi baris dinamis (tambah/hapus). BE menerima array kosong. */
+/** Kartu berisi baris dinamis (tambah/hapus). */
 @Composable
 private fun <T> RowsSection(
     title: String,

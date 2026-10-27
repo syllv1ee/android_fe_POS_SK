@@ -2,11 +2,6 @@ package com.mhyddnn.mubarokappmobile.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// ============================================================================
-// Palet brand MubarokApp — Maroon / Merah Bata (primary), Gold (secondary),
-// Green (tertiary). Dipakai membangun ColorScheme di Theme.kt.
-// ============================================================================
-
 // --- Light ---
 val md_primary = Color(0xFF8E2A2A)
 val md_onPrimary = Color(0xFFFFFFFF)
@@ -70,10 +65,6 @@ val md_outlineVariant_dark = Color(0xFF534341)
 val md_inversePrimary_dark = Color(0xFF8E2A2A)
 
 // ============================================================================
-// AppColors — pengganti `androidx.compose.material3.ColorScheme`. Hanya token yang
-// benar-benar dipakai di layar (lihat pemakaian `AppTheme.colors.*`); tambah field
-// baru kalau memang perlu, jangan re-desain nilai `md_*` di atas.
-// ============================================================================
 
 data class AppColors(
     val primary: Color,
@@ -126,9 +117,6 @@ val DarkAppColors = AppColors(
     scrim = Color.Black,
 )
 
-// ============================================================================
-// Warna semantik status (di luar ColorScheme M3) — dipakai StatusChip.
-// Sengaja independen dari brand agar makna (sukses/peringatan/dll) tetap jelas.
 // ============================================================================
 
 data class StatusToneColors(val container: Color, val content: Color)

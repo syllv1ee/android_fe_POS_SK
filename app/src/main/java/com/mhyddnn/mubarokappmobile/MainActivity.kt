@@ -37,7 +37,7 @@ class MainActivity : ComponentActivity() {
 
             MubarokAppTheme(darkTheme = darkTheme) {
                 Box(modifier = Modifier.fillMaxSize().background(AppTheme.colors.background)) {
-                    // Tahan di splash sampai tema & sesi terbaca, agar layar pertama tidak berganti warna.
+                    // Tahan di splash sampai tema & sesi terbaca.
                     when {
                         themeMode == null || loggedIn == null -> LoadingView()
                         loggedIn == true -> AppNavHost(startDestination = Routes.Home)

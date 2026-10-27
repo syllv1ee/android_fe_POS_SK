@@ -51,7 +51,6 @@ data class PlanFormUiState(
 
 private const val REQUIRED = "Wajib diisi"
 
-/** Validasi lokal (cermin skema BE). Error kosong ⇔ [NewPlan] tidak null. */
 internal fun PlanFormUiState.toNewPlan(): Pair<NewPlan?, Map<String, String>> {
     val errors = buildMap {
         if (departDate == null) put("tgl_pergi_kanvas", REQUIRED)
@@ -117,9 +116,9 @@ class PlanFormViewModel @Inject constructor(
     fun edit(transform: (PlanFormUiState) -> PlanFormUiState) = _uiState.update(transform)
 
     /**
-     * Validasi lokal dulu (hemat request & bisa offline); lolos → [PlanRepository.createPlan].
-     * Error server per field memakai kunci yang sama dengan validasi lokal, jadi tampil di field
-     * yang sama. Diabaikan bila sedang menyimpan (cegah tap ganda).
+     * Validasi lokal -> lolos -> [PlanRepository.createPlan].
+     * Error server per field memakai kunci yang sama dengan validasi lokal, jadi tampil di field yang sama.
+     * Diabaikan bila sedang menyimpan (cegah tap ganda).
      */
     fun submit() {
         val state = _uiState.value

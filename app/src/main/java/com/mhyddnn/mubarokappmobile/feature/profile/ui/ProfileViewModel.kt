@@ -26,14 +26,14 @@ class ProfileViewModel @Inject constructor(
     val themeMode: StateFlow<ThemeMode> = settingsManager.themeMode
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ThemeMode.SYSTEM)
 
-    /** Disimpan ke DataStore; `MainViewModel` mengamati nilai yang sama → tema berganti seketika. */
+    /** Disimpan ke DataStore; `MainViewModel` mengamati nilai yang sama -> tema berganti. */
     fun setThemeMode(mode: ThemeMode) {
         viewModelScope.launch { settingsManager.setThemeMode(mode) }
     }
 
     /**
-     * Sesi dibersihkan → MainActivity (mengamati isLoggedIn) otomatis kembali ke Login. Paling
-     * lama ±3 dtk (batas request logout ke server); offline tetap berhasil.
+     * Sesi dibersihkan -> MainActivity (mengamati isLoggedIn) otomatis kembali ke Login. Paling
+     * lama ±3 dtk (batas request logout ke server); offline tetap bisa logout.
      */
     fun logout() {
         viewModelScope.launch { authRepository.logout() }

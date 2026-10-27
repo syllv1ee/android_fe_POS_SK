@@ -61,13 +61,13 @@ class PlanListViewModel @Inject constructor(
             .onEach { list ->
                 val delivered = deliveredStatuses(before = _uiState.value.pending, after = list)
                 _uiState.update { s -> s.copy(pending = list, plans = s.plans.map { it.withDelivered(delivered) }) }
-                // Sudah diterima server → ambil data terbaru (juga memperbarui cache untuk offline).
+                // Sudah diterima server -> ambil data terbaru (juga memperbarui cache untuk offline).
                 if (delivered.isNotEmpty()) refresh()
             }
             .launchIn(viewModelScope)
         repository.pendingPlans
             .onEach { list ->
-                // Antrean berkurang = plan diterima server (atau dibuang) → muat ulang agar plan
+                // Antrean berkurang = plan diterima server (atau dibuang) -> muat ulang agar plan
                 // aslinya (dengan invoice) muncul di daftar.
                 val synced = list.size < _uiState.value.pendingPlans.size
                 _uiState.update { it.copy(pendingPlans = list) }

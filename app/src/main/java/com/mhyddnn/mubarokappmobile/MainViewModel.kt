@@ -15,7 +15,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/** State awal aplikasi: null = masih memuat sesi (tampilkan splash), true/false = sudah pasti. */
 @HiltViewModel
 class MainViewModel @Inject constructor(
     authRepository: AuthRepository,
@@ -31,9 +30,8 @@ class MainViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     init {
-        // DEV ONLY (BuildConfig.SKIP_LOGIN, debug saja): semai sesi dev agar langsung masuk
-        // tanpa login. Tidak ada token, jadi panggilan API asli tetap 401 — ini hanya
-        // untuk mempercepat pengembangan UI. Nonaktifkan via SKIP_LOGIN=false di build.gradle.
+        // DEV ONLY (BuildConfig.SKIP_LOGIN, debug saja)
+        // Buat true untuk skip login
         if (BuildConfig.SKIP_LOGIN) {
             viewModelScope.launch {
                 if (!sessionManager.isLoggedIn.first()) {

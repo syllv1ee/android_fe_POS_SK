@@ -12,7 +12,6 @@ import androidx.core.view.WindowCompat
 val LocalAppColors = compositionLocalOf { LightAppColors }
 val LocalAppTypography = compositionLocalOf { AppTypographyDefault }
 
-/** Pengganti `MaterialTheme.colorScheme`/`MaterialTheme.typography`. */
 object AppTheme {
     val colors: AppColors
         @Composable get() = LocalAppColors.current
@@ -20,10 +19,6 @@ object AppTheme {
         @Composable get() = LocalAppTypography.current
 }
 
-/**
- * Tema aplikasi. Warna brand (maroon) selalu dipakai apa adanya — tidak ada mode
- * "dynamic color" (Material You) karena itu murni fitur Material3 yang sudah dilepas.
- */
 @Composable
 fun MubarokAppTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),

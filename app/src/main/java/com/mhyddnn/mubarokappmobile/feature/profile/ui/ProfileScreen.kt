@@ -39,12 +39,8 @@ import com.mhyddnn.mubarokappmobile.core.designsystem.StatusChip
 import com.mhyddnn.mubarokappmobile.core.designsystem.StatusTone
 import com.mhyddnn.mubarokappmobile.ui.theme.AppTheme
 
-private const val PLACEHOLDER = "—"
+private const val PLACEHOLDER = "tidak tersedia"
 
-/**
- * Halaman Profil/Akun dengan [BrandHeader] (konsisten dengan Dashboard). Sebagian data masih
- * placeholder sampai endpoint profil tersedia; yang nyata dari sesi & `BuildConfig`. Logout di sini.
- */
 @Composable
 fun ProfileScreen(
     onBack: () -> Unit,
@@ -75,7 +71,7 @@ fun ProfileScreen(
                 )
                 Column {
                     AppText(
-                        text = session?.employeeName ?: session?.username ?: "Pengguna",
+                        text = session?.username ?: "Pengguna",
                         style = AppTheme.typography.titleLarge,
                         color = colors.onPrimary,
                     )
@@ -142,7 +138,7 @@ private fun IdentitySection(session: UserSession?) {
 private fun AppearanceSection(themeMode: ThemeMode, onSelect: (ThemeMode) -> Unit) {
     SectionCard(title = "Tampilan") {
         AppText(
-            "Tema aplikasi (mengabaikan setelan HP).",
+            "Tema aplikasi.",
             style = AppTheme.typography.bodySmall,
             color = AppTheme.colors.onSurfaceVariant,
         )
@@ -190,6 +186,6 @@ private fun PermissionSection(session: UserSession?) {
 private fun AppInfoSection() {
     SectionCard(title = "Aplikasi") {
         LabeledRow("Versi", BuildConfig.VERSION_NAME)
-        LabeledRow("Lingkungan", if (BuildConfig.DEBUG) "Debug" else "Release")
+        LabeledRow("Status APP", if (BuildConfig.DEBUG) "Debug" else "Release")
     }
 }

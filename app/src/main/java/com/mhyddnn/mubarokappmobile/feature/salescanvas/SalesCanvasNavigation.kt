@@ -10,7 +10,6 @@ import com.mhyddnn.mubarokappmobile.feature.plan.ui.PlanListScreen
 import com.mhyddnn.mubarokappmobile.feature.salescanvas.ui.SalesCanvasPlaceholderScreen
 import com.mhyddnn.mubarokappmobile.feature.salescanvas.ui.SalesCanvasScreen
 
-/** Rute milik fitur Sales Kanvas. Rute fitur tinggal di fiturnya, bukan di `core/navigation`. */
 object SalesCanvasRoutes {
     @Serializable data object Hub
     @Serializable data object Plan
@@ -23,8 +22,7 @@ object SalesCanvasRoutes {
 }
 
 /**
- * Semua layar Sales Kanvas. Didaftarkan di `AppNavHost` cukup dengan satu baris
- * `salesCanvasGraph(navController)` — tambah/hapus layar fitur ini hanya di file ini.
+ * Semua layar Sales Kanvas. Didaftarkan di `AppNavHost`.
  */
 fun NavGraphBuilder.salesCanvasGraph(navController: NavHostController) {
     val onBack: () -> Unit = { navController.popBackStack() }
@@ -57,8 +55,6 @@ fun NavGraphBuilder.salesCanvasGraph(navController: NavHostController) {
         PlanDetailScreen(onBack = onBack)
     }
     composable<SalesCanvasRoutes.Sale> {
-        // ponytail: modul penjualan belum dibuat (endpoint belum ada di sales-kanvas-be) → menu
-        // sengaja tetap ada sebagai placeholder. Buat dengan mencontek `feature/plan` (CLAUDE.md).
         SalesCanvasPlaceholderScreen(title = "Penjualan", onBack = onBack)
     }
     composable<SalesCanvasRoutes.Return> {
