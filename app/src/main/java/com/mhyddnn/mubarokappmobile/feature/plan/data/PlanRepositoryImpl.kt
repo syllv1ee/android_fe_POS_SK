@@ -7,8 +7,8 @@ import com.mhyddnn.mubarokappmobile.core.common.map
 import com.mhyddnn.mubarokappmobile.core.common.mapItems
 import com.mhyddnn.mubarokappmobile.core.datastore.SessionManager
 import com.mhyddnn.mubarokappmobile.core.network.safeApiCall
-import com.mhyddnn.mubarokappmobile.core.sync.OutboxDao
-import com.mhyddnn.mubarokappmobile.core.sync.OutboxEntity
+import com.mhyddnn.mubarokappmobile.core.sync.SyncQueueDao
+import com.mhyddnn.mubarokappmobile.core.sync.SyncQueueEntity
 import com.mhyddnn.mubarokappmobile.core.sync.SyncScheduler
 import com.mhyddnn.mubarokappmobile.core.sync.isTransient
 import com.mhyddnn.mubarokappmobile.feature.plan.domain.CreatePlanOutcome
@@ -36,10 +36,10 @@ private const val KIND_PLAN_CREATE = "plan-create"
  * Sumber data plan untuk semua layar plan.
  *
  * - **Baca** (daftar/detail/master): selalu coba server dulu; sukses -> cache Room per user
- *   (`plan_cache`, `plan_master_cache`). Gagal -> ViewModel memakai `cached*()` / master tersimpan.
- * - **Ubah status**: SELALU lewat outbox, juga saat online — satu jalur, sehingga UI cukup
+ *   (`plan_cache`, `master_data_cache`). Gagal -> ViewModel memakai `cached*()` / master tersimpan.
+ * - **Ubah status**: SELALU lewat antrean sinkron, juga saat online — satu jalur, sehingga UI cukup
  *   membaca [pendingStatuses] untuk menampilkan "Belum terkirim".
- * - **Buat plan**: online dulu, gagal sementara → outbox (lihat [createPlan]).
+ * - **Buat plan**: online dulu, gagal sementara → antrean sinkron (lihat [createPlan]).
  *
  * Cache menyimpan JSON [PlanDto] apa adanya (DTO di paket `data` dijaga R8 dari rename, jadi
  * JSON lama tetap terbaca setelah update app). Semua data dibatasi `owner` = username aktif.
@@ -47,7 +47,7 @@ private const val KIND_PLAN_CREATE = "plan-create"
 class PlanRepositoryImpl @Inject constructor(
     private val api: PlanApi,
     private val planDao: PlanDao,
-    private val outboxDao: OutboxDao,
+    private val syncQueueDao: SyncQueueDao,
     private val sessionManager: SessionManager,
     private val syncScheduler: SyncScheduler,
 ) : PlanRepository {
@@ -94,7 +94,7 @@ class PlanRepositoryImpl @Inject constructor(
         val owner = owner()
         val fresh = fetchMasterData()
         if (fresh is Result.Success) {
-            owner?.let { planDao.upsertMaster(PlanMasterEntity(it, gson.toJson(fresh.data))) }
+            owner?.let { planDao.upsertMaster(MasterDataEntity(it, gson.toJson(fresh.data))) }
             return Result.Success(fresh.data.toDomain())
         }
         val error = fresh as Result.Error
@@ -120,15 +120,15 @@ class PlanRepositoryImpl @Inject constructor(
     override suspend fun createPlan(plan: NewPlan): Result<CreatePlanOutcome> {
         val owner = owner() ?: return Result.Error("Belum login")
         val request = plan.toRequest()
-        // Key yang sama dipakai online & outbox: bila server sempat memproses tapi balasannya
-        // hilang, kiriman ulang dari outbox mengembalikan plan yang sama, bukan plan kedua.
+        // Key yang sama dipakai online & antrean sinkron: bila server sempat memproses tapi balasannya
+        // hilang, kiriman ulang dari antrean sinkron mengembalikan plan yang sama, bukan plan kedua.
         val key = UUID.randomUUID().toString()
         val result = safeApiCall { api.createPlan(key, request) }
         if (result !is Result.Error || !result.isTransient()) {
             return result.map { CreatePlanOutcome.Created(it.toDomain()) }
         }
-        outboxDao.insert(
-            OutboxEntity(id = key, owner = owner, kind = KIND_PLAN_CREATE, path = "plan", body = gson.toJson(request)),
+        syncQueueDao.insert(
+            SyncQueueEntity(id = key, owner = owner, kind = KIND_PLAN_CREATE, path = "plan", body = gson.toJson(request)),
         )
         syncScheduler.schedule()
         return Result.Success(CreatePlanOutcome.Queued)
@@ -137,7 +137,7 @@ class PlanRepositoryImpl @Inject constructor(
     @OptIn(ExperimentalCoroutinesApi::class)
     override val pendingPlans: Flow<List<PendingPlan>> = sessionManager.session.flatMapLatest { s ->
         if (s == null) flowOf(emptyList())
-        else outboxDao.observe(s.username, KIND_PLAN_CREATE).map { items ->
+        else syncQueueDao.observe(s.username, KIND_PLAN_CREATE).map { items ->
             val master = planDao.master(s.username)
                 ?.let { gson.fromJson(it.json, PlanMasterCacheDto::class.java).toDomain() }
             items.map { it.toPendingPlan(master) }
@@ -150,14 +150,14 @@ class PlanRepositoryImpl @Inject constructor(
      */
     override suspend fun updateStatus(planId: Int, status: String) {
         val owner = checkNotNull(owner()) { "Belum login" }
-        outboxDao.insert(
-            OutboxEntity(
+        syncQueueDao.insert(
+            SyncQueueEntity(
                 id = UUID.randomUUID().toString(),
                 owner = owner,
                 kind = KIND_PLAN_STATUS,
                 path = "plan/$planId/update-status",
                 body = gson.toJson(UpdatePlanStatusRequest(status)),
-                method = OutboxEntity.METHOD_PATCH,
+                method = SyncQueueEntity.METHOD_PATCH,
             ),
         )
         syncScheduler.schedule()
@@ -166,17 +166,17 @@ class PlanRepositoryImpl @Inject constructor(
     @OptIn(ExperimentalCoroutinesApi::class)
     override val pendingStatuses: Flow<List<PendingPlanStatus>> = sessionManager.session.flatMapLatest { s ->
         if (s == null) flowOf(emptyList())
-        else outboxDao.observe(s.username, KIND_PLAN_STATUS).map { items -> items.map { it.toPendingPlanStatus() } }
+        else syncQueueDao.observe(s.username, KIND_PLAN_STATUS).map { items -> items.map { it.toPendingPlanStatus() } }
     }
 
     override suspend fun retryPending(id: String) {
         val owner = owner() ?: return
-        outboxDao.retry(id, owner)
+        syncQueueDao.retry(id, owner)
         syncScheduler.schedule()
     }
 
     override suspend fun discardPending(id: String) {
         val owner = owner() ?: return
-        outboxDao.delete(id, owner)
+        syncQueueDao.delete(id, owner)
     }
 }

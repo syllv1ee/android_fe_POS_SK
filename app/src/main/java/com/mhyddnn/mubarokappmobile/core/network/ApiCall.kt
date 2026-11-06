@@ -2,7 +2,6 @@ package com.mhyddnn.mubarokappmobile.core.network
 
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import com.mhyddnn.mubarokappmobile.core.common.Page
 import com.mhyddnn.mubarokappmobile.core.common.Result
 import kotlinx.coroutines.CancellationException
 import retrofit2.Response
@@ -34,28 +33,7 @@ suspend fun safeApiCallUnit(block: suspend () -> Response<ApiResponse<Unit>>): R
     apiCall(block) { _, _ -> Result.Success(Unit) }
 
 /**
- * Varian [safeApiCall] untuk endpoint list ber-pagination: mengembalikan [Page] berisi item
- * + metadata dari `meta`. Bila `meta` tak ada, di-fallback ke satu halaman.
- */
-suspend fun <T> safeApiCallPaged(
-    block: suspend () -> Response<ApiResponse<List<T>>>,
-): Result<Page<T>> = apiCall(block) { body, code ->
-    if (body == null) return@apiCall Result.Error("Respons kosong dari server", code)
-    val items = body.data ?: emptyList()
-    val meta = body.meta
-    Result.Success(
-        Page(
-            items = items,
-            page = meta?.page ?: 1,
-            limit = meta?.limit ?: items.size,
-            total = meta?.total ?: items.size,
-            totalPages = meta?.totalPages ?: 1,
-        ),
-    )
-}
-
-/**
- * Kerangka bersama ketiga varian: [onSuccess] hanya menerima respons 2xx (body bisa null);
+ * Kerangka bersama kedua varian: [onSuccess] hanya menerima respons 2xx (body bisa null);
  * error HTTP & exception diseragamkan di sini agar aturan di [safeApiCall] berlaku sama.
  */
 private suspend fun <T, R> apiCall(

@@ -1,7 +1,7 @@
 package com.mhyddnn.mubarokappmobile.feature.plan.data
 
 import com.google.gson.Gson
-import com.mhyddnn.mubarokappmobile.core.sync.OutboxEntity
+import com.mhyddnn.mubarokappmobile.core.sync.SyncQueueEntity
 import com.mhyddnn.mubarokappmobile.feature.plan.domain.NewPlan
 import com.mhyddnn.mubarokappmobile.feature.plan.domain.PendingPlanStatus
 import com.mhyddnn.mubarokappmobile.feature.plan.domain.deliveredStatuses
@@ -39,14 +39,14 @@ class PlanDtoTest {
     @Test
     fun pendingStatus_overridesUntilFailed() {
         val plan = Gson().fromJson("""{"id":12,"invoice":"X","status":"DRAFT"}""", PlanDto::class.java).toDomain()
-        val outbox = OutboxEntity(
+        val queued = SyncQueueEntity(
             id = "u1", owner = "a", kind = "plan-status", path = "plan/12/update-status",
-            body = """{"status":"LOADING"}""", method = OutboxEntity.METHOD_PATCH,
+            body = """{"status":"LOADING"}""", method = SyncQueueEntity.METHOD_PATCH,
         )
-        val pending = outbox.toPendingPlanStatus()
+        val pending = queued.toPendingPlanStatus()
         assertEquals(12, pending.planId)
         assertEquals("LOADING", plan.displayStatus(listOf(pending)))
-        val failed = outbox.copy(status = OutboxEntity.STATUS_FAILED, error = "ditolak").toPendingPlanStatus()
+        val failed = queued.copy(status = SyncQueueEntity.STATUS_FAILED, error = "ditolak").toPendingPlanStatus()
         assertEquals("DRAFT", plan.displayStatus(listOf(failed)))
     }
 
@@ -70,18 +70,18 @@ class PlanDtoTest {
             marketAreaId = 3, vehicleId = 7, note = "pagi",
             personnel = emptyList(), products = emptyList(), kasbon = emptyList(),
         ).toRequest()
-        val outbox = OutboxEntity(id = "k1", owner = "a", kind = "plan-create", path = "plan", body = Gson().toJson(request))
+        val queued = SyncQueueEntity(id = "k1", owner = "a", kind = "plan-create", path = "plan", body = Gson().toJson(request))
         val master = PlanMasterCacheDto(
             marketAreas = listOf(MasterOptionDto(3, name = "Pati")),
             vehicles = listOf(MasterOptionDto(7, name = "Truk 1", nopol = "K 1")),
         ).toDomain()
 
-        val pending = outbox.toPendingPlan(master)
+        val pending = queued.toPendingPlan(master)
         assertEquals("2026-10-26", pending.departDate)
         assertEquals("Pati", pending.marketArea)
         assertEquals("Truk 1 · K 1", pending.vehicle)
         assertEquals(null, pending.failedMessage)
         // Tanpa cache master tetap tampil, hanya tanpa label.
-        assertEquals(null, outbox.toPendingPlan(null).marketArea)
+        assertEquals(null, queued.toPendingPlan(null).marketArea)
     }
 }

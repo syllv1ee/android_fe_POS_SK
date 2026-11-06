@@ -29,9 +29,9 @@ data class PlanListUiState(
     val errorMessage: String? = null,
     /** Terisi bila daftar diambil dari cache HP karena server tak terjangkau (alasannya). */
     val offlineMessage: String? = null,
-    /** Perubahan status yang belum diterima server (untuk chip "Belum terkirim"). */
+    /** Perubahan status yang belum diterima server. */
     val pending: List<PendingPlanStatus> = emptyList(),
-    /** Plan baru buatan HP yang belum diterima server (tampil di atas daftar). */
+    /** Plan baru yang belum diterima server. */
     val pendingPlans: List<PendingPlan> = emptyList(),
 ) {
     val canLoadMore: Boolean get() = page in 1 until totalPages
@@ -45,7 +45,7 @@ data class PlanListUiState(
  *   agar tidak berjalan dobel.
  * - Gagal di halaman 1 → tampilkan cache HP + [PlanListUiState.offlineMessage]; gagal di halaman
  *   berikutnya → daftar dibiarkan, coba lagi saat scroll.
- * - Mengamati antrean outbox (status & plan baru) dan memuat ulang begitu ada yang diterima server.
+ * - Mengamati antrean sinkron (status & plan baru) dan memuat ulang begitu ada yang diterima server.
  */
 @HiltViewModel
 class PlanListViewModel @Inject constructor(

@@ -6,7 +6,7 @@ import com.google.gson.JsonObject
 
 /**
  * Envelope response seragam backend NestJS:
- * `{ success, message, data, statusCode, meta?, errors? }`.
+ * `{ success, message, data, statusCode, errors? }`. Endpoint list: `data = { items, meta }`.
  *
  * Nama field sengaja sama dengan key JSON agar Gson memetakannya langsung.
  *
@@ -17,8 +17,6 @@ data class ApiResponse<T>(
     val message: String? = null,
     val data: T? = null,
     val statusCode: Int? = null,
-    /** Hanya untuk endpoint list. */
-    val meta: Meta? = null,
     /**
      * Diisi pada error validasi (400). sales-kanvas-be mengirim array issue Zod
      * `[{ path: ["field"], message }]`; dibaca mentah lalu diubah lewat [fieldErrorsOf].
@@ -48,7 +46,7 @@ fun fieldErrorsOf(errors: JsonElement?): Map<String, String>? {
     return map.ifEmpty { null }
 }
 
-/** Metadata pagination (`meta`) untuk endpoint list. */
+/** Metadata pagination (`data.meta`) untuk endpoint list. */
 data class Meta(
     val page: Int = 1,
     val limit: Int = 10,

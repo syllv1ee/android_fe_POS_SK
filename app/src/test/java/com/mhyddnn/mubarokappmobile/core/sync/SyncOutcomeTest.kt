@@ -7,7 +7,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** Data outbox hanya boleh dihapus saat 2xx; gangguan sementara wajib diulang, bukan dibuang. */
+/** Data antrean sinkron hanya boleh dihapus saat 2xx; gangguan sementara wajib diulang, bukan dibuang. */
 class SyncOutcomeTest {
 
     @Test

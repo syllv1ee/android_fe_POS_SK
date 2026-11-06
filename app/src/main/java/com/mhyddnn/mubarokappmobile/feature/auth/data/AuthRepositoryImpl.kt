@@ -37,7 +37,7 @@ class AuthRepositoryImpl @Inject constructor(
     override suspend fun login(username: String, password: String): Result<UserSession> {
         val login = safeApiCall { api.login(LoginRequest(username, password)) }
         if (login is Result.Success) {
-            // Token dulu: request berikutnya (termasuk sinkron outbox) langsung butuh Bearer.
+            // Token dulu: request berikutnya (termasuk pengiriman antrean sinkron) langsung butuh Bearer.
             tokens.save(login.data.accessToken, login.data.refreshToken)
         }
         val result = login.map { it.user.toSession() }
@@ -53,7 +53,7 @@ class AuthRepositoryImpl @Inject constructor(
      * Logout harus jalan tanpa sinyal: request server hanya best-effort (dibatasi
      * [LOGOUT_TIMEOUT_MS]), sesi lokal & token SELALU dibersihkan — juga bila coroutine dibatalkan.
      * Request logout dikirim sebelum token dihapus, karena butuh Bearer.
-     * Outbox user ini tidak dihapus; terkirim saat user yang sama login lagi.
+     * Antrean sinkron user ini tidak dihapus; terkirim saat user yang sama login lagi.
      */
     override suspend fun logout(): Result<Unit> {
         try {

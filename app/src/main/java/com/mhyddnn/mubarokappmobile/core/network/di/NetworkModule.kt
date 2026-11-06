@@ -31,7 +31,7 @@ annotation class RefreshClient
 
 /**
  * Dua client OkHttp:
- * - **utama** (semua API fitur + outbox): [ServerUrlInterceptor] → [AuthInterceptor] (Bearer) →
+ * - **utama** (semua API fitur + antrean sinkron): [ServerUrlInterceptor] → [AuthInterceptor] (Bearer) →
  *   log, dengan [TokenAuthenticator] untuk 401 → refresh → ulang request.
  * - **[RefreshClient]**: hanya `POST /auth/refresh`, tanpa Bearer & tanpa authenticator, agar 401
  *   dari refresh tidak memicu refresh lagi (rekursi).
@@ -90,7 +90,7 @@ object NetworkModule {
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(TokenRefreshApi::class.java)
-        // Sesi lokal TIDAK dihapus (app tetap jalan offline, outbox aman) — cukup tandai
+        // Sesi lokal TIDAK dihapus (app tetap jalan offline, antrean sinkron aman) — cukup tandai
         // needsRelogin; UI menampilkan ajakan login ulang dan sinkron berhenti sampai login.
         // runBlocking: callback ini dipanggil di thread OkHttp (dari authenticate), bukan main.
         return TokenAuthenticator(refreshApi, tokens, onSessionExpired = {

@@ -10,13 +10,13 @@ import retrofit2.http.POST
 import retrofit2.http.Url
 
 /**
- * POST/PATCH generik untuk isi [OutboxEntity] — body sudah JSON, respons cukup dibaca kodenya.
+ * POST/PATCH generik untuk isi [SyncQueueEntity] — body sudah JSON, respons cukup dibaca kodenya.
  *
  * `@Url` relatif (mis. `plan`) di-resolve terhadap `BASE_URL`, lewat client utama: Bearer,
  * auto-refresh 401, dan override URL server dev tetap berlaku. Respons mentah ([ResponseBody]),
  * bukan [com.mhyddnn.mubarokappmobile.core.network.ApiResponse], karena worker tidak memakai `data`.
  */
-interface OutboxApi {
+interface SyncQueueApi {
     @POST
     suspend fun post(
         @Url path: String,

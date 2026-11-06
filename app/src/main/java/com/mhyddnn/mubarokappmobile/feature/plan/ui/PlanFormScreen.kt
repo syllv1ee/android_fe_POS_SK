@@ -1,5 +1,6 @@
 package com.mhyddnn.mubarokappmobile.feature.plan.ui
 
+import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -16,6 +17,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -37,6 +39,7 @@ import com.mhyddnn.mubarokappmobile.core.designsystem.StatusTone
 import com.mhyddnn.mubarokappmobile.feature.plan.domain.PlanMasterData
 import com.mhyddnn.mubarokappmobile.feature.plan.domain.PlanOption
 import com.mhyddnn.mubarokappmobile.ui.theme.AppTheme
+import com.mhyddnn.mubarokappmobile.ui.theme.MubarokAppTheme
 
 /** Posisi personil */
 private val Positions = listOf("Sopir", "Sales", "Helper")
@@ -269,3 +272,36 @@ private fun <T> RowsSection(
 private fun <T> List<T>.with(index: Int, item: T): List<T> = toMutableList().also { it[index] = item }
 
 private fun <T> List<T>.without(index: Int): List<T> = filterIndexed { i, _ -> i != index }
+
+@Preview(name = "Terang", heightDp = 1100)
+@Preview(name = "Gelap", heightDp = 1100, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun PlanFormPreview() {
+    val master = PlanMasterData(
+        marketAreas = listOf(PlanOption(1, "Area Kota")),
+        vehicles = listOf(PlanOption(1, "B 1234 XY")),
+        employees = listOf(PlanOption(1, "Budi")),
+        products = listOf(PlanOption(1, "Produk A")),
+        kasbonTypes = listOf(PlanOption(1, "Solar")),
+        offlineMessage = "Gagal terhubung ke server.",
+    )
+    MubarokAppTheme {
+        AppScaffold(title = "Tambah Plan", onBack = {}) {
+            PlanFormContent(
+                state = PlanFormUiState(
+                    isLoading = false,
+                    master = master,
+                    marketAreaId = 1,
+                    kasbon = listOf(KasbonRow(typeId = 1, price = 150_000)),
+                    fieldErrors = mapOf("tgl_pergi_kanvas" to "Wajib diisi", "vehicle_id" to "Wajib diisi"),
+                ),
+                master = master,
+                onEdit = {},
+                onSubmit = {},
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(AppTheme.colors.background),
+            )
+        }
+    }
+}

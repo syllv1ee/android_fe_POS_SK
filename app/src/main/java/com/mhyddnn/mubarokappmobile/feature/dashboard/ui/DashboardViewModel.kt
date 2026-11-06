@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mhyddnn.mubarokappmobile.core.datastore.UserSession
 import com.mhyddnn.mubarokappmobile.core.datastore.has
-import com.mhyddnn.mubarokappmobile.core.sync.OutboxStatus
+import com.mhyddnn.mubarokappmobile.core.sync.SyncQueueStatus
 import com.mhyddnn.mubarokappmobile.feature.auth.domain.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -14,14 +14,14 @@ import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
 /**
- * State Beranda: sesi, menu terfilter permission, dan status sinkron. Semua turunan Flow sesi/outbox,
+ * State Beranda: sesi, menu terfilter permission, dan status sinkron. Semua turunan Flow sesi/antrean sinkron,
  * tidak ada request jaringan. `WhileSubscribed(5_000)`: berhenti mengamati 5 dtk setelah layar
  * tak terlihat, tapi selamat dari rotasi layar tanpa memulai ulang.
  */
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
     private val authRepository: AuthRepository,
-    outboxStatus: OutboxStatus,
+    syncQueueStatus: SyncQueueStatus,
 ) : ViewModel() {
 
     /** null sesaat di awal (sebelum DataStore terbaca), lalu sesi aktif. */
@@ -45,6 +45,6 @@ class DashboardViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
     /** Data buatan HP yang belum terkirim ke server (semua fitur, termasuk yang FAILED). */
-    val unsyncedCount: StateFlow<Int> = outboxStatus.unsyncedCount
+    val unsyncedCount: StateFlow<Int> = syncQueueStatus.unsyncedCount
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
 }

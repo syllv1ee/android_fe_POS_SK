@@ -16,7 +16,7 @@ interface AuthRepository {
     val needsRelogin: Flow<Boolean>
 
     /**
-     * `POST /auth/login`. Sukses → token disimpan, lalu sesi & permission, lalu sinkron outbox
+     * `POST /auth/login`. Sukses → token disimpan, lalu sesi & permission, lalu pengiriman antrean sinkron
      * dipicu. Error → [Result.Error] dengan `fieldErrors` (`username`/`password`) bila validasi.
      * Dipakai juga untuk login ulang saat needsRelogin (sesi lama ditimpa).
      */
@@ -24,7 +24,7 @@ interface AuthRepository {
 
     /**
      * Logout di server (best-effort, dibatasi waktu) + bersihkan token & sesi lokal. Selalu
-     * [Result.Success]: lokal pasti bersih walau offline. Outbox & cache user ini tidak dihapus.
+     * [Result.Success]: lokal pasti bersih walau offline. Antrean sinkron & cache user ini tidak dihapus.
      */
     suspend fun logout(): Result<Unit>
 }

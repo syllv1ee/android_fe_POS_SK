@@ -48,7 +48,7 @@ sealed interface CreatePlanOutcome {
 
 /** Plan baru yang dibuat di HP tapi belum diterima server — belum punya id & invoice. */
 data class PendingPlan(
-    /** Id outbox (= Idempotency-Key). */
+    /** Id antrean sinkron (= Idempotency-Key). */
     val id: String,
     val departDate: String,
     val marketArea: String?,

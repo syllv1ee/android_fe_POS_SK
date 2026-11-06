@@ -21,19 +21,19 @@ import javax.inject.Inject
  * Siklus hidup:
  * - [STATUS_PENDING] → dikirim → 2xx → **dihapus** (satu-satunya penghapusan otomatis).
  * - [STATUS_PENDING] → ditolak (400/403/404/409…) → [STATUS_FAILED] + [error]; menunggu user:
- *   [OutboxDao.retry] (kembali PENDING) atau buang ([OutboxDao.delete] by id).
+ *   [SyncQueueDao.retry] (kembali PENDING) atau buang ([SyncQueueDao.delete] by id).
  * - Gangguan sementara (offline, 5xx, 401 yang bisa di-refresh) → tetap PENDING, dicoba lagi.
  *
- * Fitur menulis lewat `outboxDao.insert` + `SyncScheduler.schedule()` dan membaca antreannya
- * sendiri lewat [OutboxDao.observe] dengan [kind] miliknya.
+ * Fitur menulis lewat `syncQueueDao.insert` + `SyncScheduler.schedule()` dan membaca antreannya
+ * sendiri lewat [SyncQueueDao.observe] dengan [kind] miliknya.
  */
-@Entity(tableName = "outbox")
-data class OutboxEntity(
+@Entity(tableName = "sync_queue")
+data class SyncQueueEntity(
     /**
      * UUID — juga dikirim sebagai header `Idempotency-Key`. sales-kanvas-be menghormatinya di
      * `POST /plan` & `PATCH /plan/:id` (revisi): kirim ulang dengan key sama → plan yang sama,
      * tidak dobel (endpoint_plan.md). PATCH yang hanya men-set nilai (update-status) memang aman
-     * diulang. Endpoint POST LAIN yang masuk outbox wajib dibuat menghormati header ini dulu di BE.
+     * diulang. Endpoint POST LAIN yang masuk antrean sinkron wajib dibuat menghormati header ini dulu di BE.
      */
     @PrimaryKey val id: String,
     /** Username pembuat. Hanya dikirim saat pemiliknya yang login. */
@@ -44,7 +44,7 @@ data class OutboxEntity(
     val path: String,
     /** Body JSON siap kirim (hasil `Gson.toJson` DTO request fitur), dikirim apa adanya. */
     val body: String,
-    /** Epoch ms saat dibuat — menentukan urutan kirim ([OutboxDao.nextPending]). */
+    /** Epoch ms saat dibuat — menentukan urutan kirim ([SyncQueueDao.nextPending]). */
     val createdAt: Long = System.currentTimeMillis(),
     /** [STATUS_PENDING] atau [STATUS_FAILED]. */
     val status: String = STATUS_PENDING,
@@ -62,53 +62,53 @@ data class OutboxEntity(
 }
 
 /**
- * Akses tabel `outbox`. Query untuk UI selalu disaring `owner` agar antrean user lain di HP yang
+ * Akses tabel `sync_queue`. Query untuk UI selalu disaring `owner` agar antrean user lain di HP yang
  * sama tidak terlihat/terubah.
  */
 @Dao
-interface OutboxDao {
+interface SyncQueueDao {
 
     /** Id UUID baru per operasi; konflik id = bug pemanggil → exception (ABORT bawaan Room). */
     @Insert
-    suspend fun insert(item: OutboxEntity)
+    suspend fun insert(item: SyncQueueEntity)
 
     /** Dipakai [SyncWorker] setelah server menerima (2xx). */
     @Delete
-    suspend fun delete(item: OutboxEntity)
+    suspend fun delete(item: SyncQueueEntity)
 
     /** Buang oleh user (biasanya item FAILED). Tanpa efek bila [id] bukan milik [owner]. */
-    @Query("DELETE FROM outbox WHERE id = :id AND owner = :owner")
+    @Query("DELETE FROM sync_queue WHERE id = :id AND owner = :owner")
     suspend fun delete(id: String, owner: String)
 
     /**
      * Item tertua yang belum terkirim milik [owner] (urutan kirim = urutan input). `rowid` =
      * urutan insert, pemecah seri bila dua item dibuat di milidetik yang sama.
      */
-    @Query("SELECT * FROM outbox WHERE owner = :owner AND status = 'PENDING' ORDER BY createdAt, rowid LIMIT 1")
-    suspend fun nextPending(owner: String): OutboxEntity?
+    @Query("SELECT * FROM sync_queue WHERE owner = :owner AND status = 'PENDING' ORDER BY createdAt, rowid LIMIT 1")
+    suspend fun nextPending(owner: String): SyncQueueEntity?
 
     /** Dipakai [SyncWorker]; tanpa filter owner karena [id] berasal dari [nextPending] user itu. */
-    @Query("UPDATE outbox SET status = 'FAILED', error = :error WHERE id = :id")
+    @Query("UPDATE sync_queue SET status = 'FAILED', error = :error WHERE id = :id")
     suspend fun markFailed(id: String, error: String)
 
     /** Kembalikan item gagal ke antrean (mis. setelah data master di server diperbaiki). */
-    @Query("UPDATE outbox SET status = 'PENDING', error = NULL WHERE id = :id AND owner = :owner")
+    @Query("UPDATE sync_queue SET status = 'PENDING', error = NULL WHERE id = :id AND owner = :owner")
     suspend fun retry(id: String, owner: String)
 
     /**
      * Antrean satu fitur ([kind]), PENDING maupun FAILED, terbaru dulu. Flow Room: memancarkan
-     * ulang setiap tabel `outbox` berubah (insert, kirim sukses, ditandai gagal).
+     * ulang setiap tabel `sync_queue` berubah (insert, kirim sukses, ditandai gagal).
      */
-    @Query("SELECT * FROM outbox WHERE owner = :owner AND kind = :kind ORDER BY createdAt DESC")
-    fun observe(owner: String, kind: String): Flow<List<OutboxEntity>>
+    @Query("SELECT * FROM sync_queue WHERE owner = :owner AND kind = :kind ORDER BY createdAt DESC")
+    fun observe(owner: String, kind: String): Flow<List<SyncQueueEntity>>
 
     /** Semua item milik [owner], termasuk FAILED. */
-    @Query("SELECT COUNT(*) FROM outbox WHERE owner = :owner")
+    @Query("SELECT COUNT(*) FROM sync_queue WHERE owner = :owner")
     fun observeCount(owner: String): Flow<Int>
 }
 
 /**
- * Gagal karena sinyal / server / sesi — bukan karena isi data → boleh masuk outbox. Penolakan isi
+ * Gagal karena sinyal / server / sesi — bukan karena isi data → boleh masuk antrean sinkron. Penolakan isi
  * (400 validasi, 403, 409) tetap ditampilkan di form agar bisa langsung dibetulkan. Aturan kodenya
  * sama dengan [SyncWorker.outcomeOf], jadi form dan worker tidak pernah berbeda pendapat.
  */
@@ -119,8 +119,8 @@ internal fun Result.Error.isTransient(): Boolean =
  * Jumlah data user aktif yang belum diterima server (untuk badge/banner lintas fitur). Ikut
  * berganti saat user login/logout ([flatMapLatest] atas sesi); belum login → 0.
  */
-class OutboxStatus @Inject constructor(
-    private val dao: OutboxDao,
+class SyncQueueStatus @Inject constructor(
+    private val dao: SyncQueueDao,
     private val sessionManager: SessionManager,
 ) {
     @OptIn(ExperimentalCoroutinesApi::class)

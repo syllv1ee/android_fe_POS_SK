@@ -18,7 +18,7 @@ private val Context.settingsDataStore by preferencesDataStore(name = "settings")
 /**
  * Preferensi aplikasi non-sesi (file `settings`, terpisah dari `session` agar tetap ada walau
  * logout): mode tema dan override URL server (dev). DataStore Preferences — tepat untuk setting
- * kecil; Room dipakai untuk cache & outbox.
+ * kecil; Room dipakai untuk cache & antrean sinkron.
  */
 @Singleton
 class SettingsManager @Inject constructor(

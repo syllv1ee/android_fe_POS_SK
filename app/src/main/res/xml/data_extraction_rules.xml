@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   Tidak ada data yang dicadangkan/dipindah (Android 12+). allowBackup="false" saja tidak menutup
-  device-transfer. Isi app = token (TokenStore, plaintext), sesi, dan outbox Room: refresh token
-  dirotasi server sehingga salinan di HP lain pasti basi, dan outbox bisa terkirim dua kali.
+  device-transfer. Isi app = token (TokenStore, plaintext), sesi, dan antrean sinkron di Room: refresh token
+  dirotasi server sehingga salinan di HP lain pasti basi, dan antrean sinkron bisa terkirim dua kali.
 -->
 <data-extraction-rules>
     <cloud-backup>

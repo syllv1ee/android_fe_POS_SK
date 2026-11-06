@@ -1,5 +1,6 @@
 package com.mhyddnn.mubarokappmobile.feature.plan.ui
 
+import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -15,6 +16,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -32,9 +34,13 @@ import com.mhyddnn.mubarokappmobile.core.designsystem.StatusChip
 import com.mhyddnn.mubarokappmobile.core.designsystem.StatusTone
 import com.mhyddnn.mubarokappmobile.feature.plan.domain.PendingPlanStatus
 import com.mhyddnn.mubarokappmobile.feature.plan.domain.Plan
+import com.mhyddnn.mubarokappmobile.feature.plan.domain.PlanKasbon
+import com.mhyddnn.mubarokappmobile.feature.plan.domain.PlanPersonnel
+import com.mhyddnn.mubarokappmobile.feature.plan.domain.PlanProduct
 import com.mhyddnn.mubarokappmobile.feature.plan.domain.PlanStatus
 import com.mhyddnn.mubarokappmobile.feature.plan.domain.displayStatus
 import com.mhyddnn.mubarokappmobile.ui.theme.AppTheme
+import com.mhyddnn.mubarokappmobile.ui.theme.MubarokAppTheme
 import java.math.BigDecimal
 
 /**
@@ -192,6 +198,53 @@ private fun PendingStatusBanner(
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
             AppTextButton(text = "Buang", onClick = { onDiscard(pending.id) }, color = AppTheme.colors.error)
             AppTextButton(text = "Kirim ulang", onClick = { onRetry(pending.id) })
+        }
+    }
+}
+
+/** Contoh data untuk preview layar plan. */
+internal val previewPlan = Plan(
+    id = 1,
+    invoice = "PLN-0001",
+    status = PlanStatus.APPROVED,
+    invoiceDate = "2026-11-06",
+    departDate = "2026-11-07",
+    returnDate = "2026-11-10",
+    note = "Rute pagi",
+    revision = 0,
+    revisedTo = null,
+    vehicle = "B 1234 XY",
+    marketArea = "Area Kota",
+    personnel = listOf(PlanPersonnel("Budi", "Sopir"), PlanPersonnel("Sari", "Sales")),
+    products = listOf(PlanProduct("P-001", "Produk A", 10.0), PlanProduct("P-002", "Produk B", 2.5)),
+    kasbon = listOf(PlanKasbon("Solar", price = 150_000, qty = 2)),
+)
+
+@Preview(name = "Terang", heightDp = 1100)
+@Preview(name = "Gelap", heightDp = 1100, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun PlanDetailPreview() {
+    MubarokAppTheme {
+        AppScaffold(title = "Detail Plan", onBack = {}) {
+            PlanDetailContent(
+                plan = previewPlan,
+                state = PlanDetailUiState(
+                    isLoading = false,
+                    plan = previewPlan,
+                    offlineMessage = "Gagal terhubung ke server.",
+                    pending = listOf(
+                        PendingPlanStatus(id = "status-1", planId = 1, status = PlanStatus.LOADING, failedMessage = null),
+                        PendingPlanStatus(id = "status-2", planId = 1, status = PlanStatus.COMPLETE, failedMessage = "Plan sudah terkunci"),
+                    ),
+                ),
+                onReload = {},
+                onChangeStatus = {},
+                onRetryPending = {},
+                onDiscardPending = {},
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(AppTheme.colors.background),
+            )
         }
     }
 }

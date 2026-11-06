@@ -35,7 +35,7 @@ class SyncScheduler @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
     /**
-     * - `APPEND_OR_REPLACE` (default, setelah insert ke outbox): bila worker sedang jalan, work baru
+     * - `APPEND_OR_REPLACE` (default, setelah insert ke antrean sinkron): bila worker sedang jalan, work baru
      *   diantrekan SETELAHNYA, jadi item yang masuk di tengah pengiriman tetap terkirim. Bila work
      *   sebelumnya gagal/dibatalkan, diganti baru.
      * - `KEEP` (start app, tanpa item baru): work yang sudah menunggu dipakai ulang, tidak menambah
@@ -53,14 +53,14 @@ class SyncScheduler @Inject constructor(
     }
 
     private companion object {
-        const val WORK_NAME = "outbox-sync"
+        const val WORK_NAME = "sync-queue"
     }
 }
 
 /**
- * Mengirim isi outbox satu per satu (tertua dulu) milik user yang sedang login.
+ * Mengirim isi antrean sinkron satu per satu (tertua dulu) milik user yang sedang login.
  *
- * - 2xx → hapus dari outbox.
+ * - 2xx → hapus dari antrean sinkron.
  * - Tanpa jaringan / timeout / 408 / 429 / 5xx → `retry()` (data tetap aman).
  * - 401 dan refresh token ditolak → sesi ditandai `needsRelogin`, sinkron berhenti sampai
  *   user login ulang ([SyncScheduler.schedule] dipanggil lagi setelah login).
@@ -81,15 +81,15 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
     @EntryPoint
     @InstallIn(SingletonComponent::class)
     interface Deps {
-        fun outboxDao(): OutboxDao
-        fun outboxApi(): OutboxApi
+        fun syncQueueDao(): SyncQueueDao
+        fun syncQueueApi(): SyncQueueApi
         fun sessionManager(): SessionManager
     }
 
     override suspend fun doWork(): Result {
         val deps = EntryPointAccessors.fromApplication(applicationContext, Deps::class.java)
         val sessionManager = deps.sessionManager()
-        val dao = deps.outboxDao()
+        val dao = deps.syncQueueDao()
         // Belum login → tidak ada yang boleh dikirim; dipicu lagi setelah login.
         val owner = sessionManager.session.first()?.username ?: return Result.success()
 
@@ -102,8 +102,8 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
 
             val response = try {
                 val body = item.body.toRequestBody(JSON)
-                if (item.method == OutboxEntity.METHOD_PATCH) deps.outboxApi().patch(item.path, item.id, body)
-                else deps.outboxApi().post(item.path, item.id, body)
+                if (item.method == SyncQueueEntity.METHOD_PATCH) deps.syncQueueApi().patch(item.path, item.id, body)
+                else deps.syncQueueApi().post(item.path, item.id, body)
             } catch (e: CancellationException) {
                 throw e
             } catch (_: IOException) {
@@ -149,11 +149,11 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             else -> SendOutcome.REJECTED
         }
 
-        /** Content-Type body outbox (selalu JSON). */
+        /** Content-Type body antrean sinkron (selalu JSON). */
         val JSON = "application/json; charset=utf-8".toMediaType()
 
         /**
-         * Pesan untuk [OutboxEntity.error]: `message` envelope + satu baris per field (`errors`),
+         * Pesan untuk [SyncQueueEntity.error]: `message` envelope + satu baris per field (`errors`),
          * mis. `"Validation failed\nvehicle_id: wajib"`. Body bukan JSON → "Ditolak server (kode N)".
          */
         fun errorMessage(raw: String?, code: Int): String {

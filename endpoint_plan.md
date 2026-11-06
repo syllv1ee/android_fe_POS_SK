@@ -247,7 +247,7 @@ Yang terjadi di BE (dalam satu transaksi):
 | `400` | `status` bukan nilai enum yang valid                                          |
 | `404` | id tidak ditemukan                                                            |
 
-**Aman dikirim ulang:** bila `status` yang diminta **sama dengan status saat ini**, server membalas `200` dengan record apa adanya (tanpa perubahan). Ini berlaku juga untuk `BATAL` yang terkirim dua kali (mis. outbox HP setelah timeout), jadi tidak lagi ditolak `400`. Mengubah plan `BATAL` ke status **lain** tetap ditolak.
+**Aman dikirim ulang:** bila `status` yang diminta **sama dengan status saat ini**, server membalas `200` dengan record apa adanya (tanpa perubahan). Ini berlaku juga untuk `BATAL` yang terkirim dua kali (mis. antrean sinkron HP setelah timeout), jadi tidak lagi ditolak `400`. Mengubah plan `BATAL` ke status **lain** tetap ditolak.
 
 Catatan: mengubah status ke `BATAL` lewat endpoint ini **tidak** mengisi `cancelled_at`; kolom itu hanya diisi saat revisi.
 
@@ -261,7 +261,7 @@ Catatan: mengubah status ke `BATAL` lewat endpoint ini **tidak** mengisi `cancel
 Idempotency-Key: 3f6c2a1e-8b4d-4c1a-9e2f-7d5b6a4c3e21
 ```
 
-- **Gunanya:** request yang dikirim ulang (mis. outbox HP setelah timeout, padahal server sudah memproses) **tidak membuat plan dobel**. Kiriman dengan key yang sama mengembalikan plan yang dulu dibuat, dengan `id` dan `invoice` yang sama.
+- **Gunanya:** request yang dikirim ulang (mis. antrean sinkron HP setelah timeout, padahal server sudah memproses) **tidak membuat plan dobel**. Kiriman dengan key yang sama mengembalikan plan yang dulu dibuat, dengan `id` dan `invoice` yang sama.
 - **Format:** 1–100 karakter `A–Z a–z 0–9 _ -` (UUID cocok). Format lain ditolak `400 "Idempotency-Key tidak valid"`.
 - **Satu key = satu operasi.** Buat key baru untuk setiap plan atau revisi baru, dan pakai key yang sama hanya saat **mengirim ulang** operasi yang sama. Isi body kiriman ulang tidak dibandingkan.
 - **Revisi:** kiriman ulang revisi yang sudah sukses mengembalikan plan hasil revisi, bukan `400 "plan sudah dibatalkan"`.

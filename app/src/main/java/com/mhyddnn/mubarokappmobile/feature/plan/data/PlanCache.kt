@@ -21,8 +21,8 @@ data class PlanEntity(
 )
 
 /** Data master form plan terakhir dari server, per user — agar form bisa dibuka offline. */
-@Entity(tableName = "plan_master_cache")
-data class PlanMasterEntity(
+@Entity(tableName = "master_data_cache")
+data class MasterDataEntity(
     @PrimaryKey val owner: String,
     val json: String,
 )
@@ -49,9 +49,9 @@ interface PlanDao {
         upsert(items)
     }
 
-    @Query("SELECT * FROM plan_master_cache WHERE owner = :owner")
-    suspend fun master(owner: String): PlanMasterEntity?
+    @Query("SELECT * FROM master_data_cache WHERE owner = :owner")
+    suspend fun master(owner: String): MasterDataEntity?
 
     @Upsert
-    suspend fun upsertMaster(item: PlanMasterEntity)
+    suspend fun upsertMaster(item: MasterDataEntity)
 }

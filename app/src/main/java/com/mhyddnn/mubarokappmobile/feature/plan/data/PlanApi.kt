@@ -22,7 +22,7 @@ interface PlanApi {
     suspend fun getPlan(@Path("id") id: Int): Response<ApiResponse<PlanDto>>
 
     /**
-     * Dicoba online dulu (error validasi tampil di form); gagal karena sinyal -> outbox dengan
+     * Dicoba online dulu (error validasi tampil di form); gagal karena sinyal -> antrean sinkron dengan
      * [idempotencyKey] yang sama, jadi kiriman ulang tidak membuat plan dobel.
      */
     @POST("plan")

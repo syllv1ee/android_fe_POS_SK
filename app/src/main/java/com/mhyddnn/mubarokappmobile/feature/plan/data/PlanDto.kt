@@ -4,7 +4,7 @@ import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import com.mhyddnn.mubarokappmobile.core.common.Page
 import com.mhyddnn.mubarokappmobile.core.network.Meta
-import com.mhyddnn.mubarokappmobile.core.sync.OutboxEntity
+import com.mhyddnn.mubarokappmobile.core.sync.SyncQueueEntity
 import com.mhyddnn.mubarokappmobile.feature.plan.domain.NewPlan
 import com.mhyddnn.mubarokappmobile.feature.plan.domain.PendingPlan
 import com.mhyddnn.mubarokappmobile.feature.plan.domain.PendingPlanStatus
@@ -64,7 +64,7 @@ data class MasterOptionDto(
 fun MasterOptionDto.toOption(): PlanOption =
     PlanOption(id, listOfNotNull(code, name, nopol).joinToString(" · ").ifBlank { "#$id" })
 
-/** Isi `plan_master_cache.json`: respons mentah kelima endpoint master. */
+/** Isi `master_data_cache.json`: respons mentah kelima endpoint master. */
 data class PlanMasterCacheDto(
     val marketAreas: List<MasterOptionDto>? = null,
     val vehicles: List<MasterOptionDto>? = null,
@@ -160,8 +160,8 @@ fun PlanDto.toDomain(): Plan = Plan(
 
 private val gson = Gson()
 
-/** Outbox `POST plan` → ringkasan untuk daftar; label diambil dari [master] (null = tampil tanpa label). */
-fun OutboxEntity.toPendingPlan(master: PlanMasterData?): PendingPlan {
+/** Antrean sinkron `POST plan` → ringkasan untuk daftar; label diambil dari [master] (null = tampil tanpa label). */
+fun SyncQueueEntity.toPendingPlan(master: PlanMasterData?): PendingPlan {
     val req = gson.fromJson(body, CreatePlanRequest::class.java)
     return PendingPlan(
         id = id,
@@ -169,17 +169,17 @@ fun OutboxEntity.toPendingPlan(master: PlanMasterData?): PendingPlan {
         marketArea = master?.marketAreas?.firstOrNull { it.id == req.marketAreaId }?.label,
         vehicle = master?.vehicles?.firstOrNull { it.id == req.vehicleId }?.label,
         note = req.note,
-        failedMessage = error.takeIf { status == OutboxEntity.STATUS_FAILED },
+        failedMessage = error.takeIf { status == SyncQueueEntity.STATUS_FAILED },
     )
 }
 
 /**
- * Path outbox `plan/{id}/update-status` -> id plan-nya. Bergantung pada format path yang ditulis
+ * Path antrean sinkron `plan/{id}/update-status` -> id plan-nya. Bergantung pada format path yang ditulis
  * `PlanRepositoryImpl.updateStatus` — ubah keduanya bersamaan.
  */
-fun OutboxEntity.toPendingPlanStatus(): PendingPlanStatus = PendingPlanStatus(
+fun SyncQueueEntity.toPendingPlanStatus(): PendingPlanStatus = PendingPlanStatus(
     id = id,
     planId = path.split('/')[1].toInt(),
     status = gson.fromJson(body, UpdatePlanStatusRequest::class.java).status,
-    failedMessage = error.takeIf { status == OutboxEntity.STATUS_FAILED },
+    failedMessage = error.takeIf { status == SyncQueueEntity.STATUS_FAILED },
 )

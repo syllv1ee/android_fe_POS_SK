@@ -1,5 +1,6 @@
 package com.mhyddnn.mubarokappmobile.feature.plan.ui
 
+import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,6 +22,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -41,8 +43,11 @@ import com.mhyddnn.mubarokappmobile.core.designsystem.RefreshableBox
 import com.mhyddnn.mubarokappmobile.core.designsystem.StatusChip
 import com.mhyddnn.mubarokappmobile.core.designsystem.StatusTone
 import com.mhyddnn.mubarokappmobile.feature.plan.domain.PendingPlan
+import com.mhyddnn.mubarokappmobile.feature.plan.domain.PendingPlanStatus
+import com.mhyddnn.mubarokappmobile.feature.plan.domain.PlanStatus
 import com.mhyddnn.mubarokappmobile.feature.plan.domain.displayStatus
 import com.mhyddnn.mubarokappmobile.ui.theme.AppTheme
+import com.mhyddnn.mubarokappmobile.ui.theme.MubarokAppTheme
 
 /**
  * Daftar plan: plan buatan HP yang belum terkirim di atas, lalu plan dari server (atau cache HP
@@ -199,5 +204,39 @@ private fun PendingPlanCard(
             onDismiss = { confirmDiscard = false },
             destructive = true,
         )
+    }
+}
+
+@Preview(name = "Terang")
+@Preview(name = "Gelap", uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun PlanListPreview() {
+    MubarokAppTheme {
+        AppScaffold(title = "Plan", onBack = {}) {
+            PlanList(
+                state = PlanListUiState(
+                    plans = listOf(
+                        previewPlan,
+                        previewPlan.copy(id = 2, invoice = "PLN-0002", status = PlanStatus.DRAFT),
+                    ),
+                    pending = listOf(
+                        PendingPlanStatus(id = "status-1", planId = 2, status = PlanStatus.LOADING, failedMessage = null),
+                    ),
+                    pendingPlans = listOf(
+                        PendingPlan("plan-1", "2026-11-08", "Area Kota", "B 1234 XY", "Rute pagi", failedMessage = null),
+                        PendingPlan("plan-2", "2026-11-09", "Area Timur", "B 5678 ZZ", null, failedMessage = "Kendaraan sedang dipakai"),
+                    ),
+                    offlineMessage = "Gagal terhubung ke server.",
+                ),
+                onRefresh = {},
+                onLoadMore = {},
+                onPlanClick = {},
+                onRetryPending = {},
+                onDiscardPending = {},
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(AppTheme.colors.background),
+            )
+        }
     }
 }

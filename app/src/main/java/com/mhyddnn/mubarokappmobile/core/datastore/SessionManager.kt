@@ -116,7 +116,7 @@ class SessionManager @Inject constructor(
     }
 
     /**
-     * Logout: hapus seluruh sesi → [isLoggedIn] false → `MainActivity` pindah ke Login. Outbox &
+     * Logout: hapus seluruh sesi → [isLoggedIn] false → `MainActivity` pindah ke Login. Antrean sinkron &
      * cache di Room TIDAK ikut dihapus (milik username itu, dipakai lagi saat ia login kembali).
      */
     suspend fun clear() {
