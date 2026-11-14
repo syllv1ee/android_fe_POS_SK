@@ -73,7 +73,7 @@ object NetworkModule {
             .addInterceptor(serverUrl)
             // HEADERS, bukan BODY: body request & respons refresh berisi refresh_token.
             .addInterceptor(logging(HttpLoggingInterceptor.Level.HEADERS))
-            .connectTimeout(30, TimeUnit.SECONDS)
+            .connectTimeout(10, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .build()
 
@@ -114,7 +114,7 @@ object NetworkModule {
             .addInterceptor(serverUrl)
             .addInterceptor(AuthInterceptor(tokens))
             .addInterceptor(logging)
-            .connectTimeout(30, TimeUnit.SECONDS)
+            .connectTimeout(10, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .build()
 

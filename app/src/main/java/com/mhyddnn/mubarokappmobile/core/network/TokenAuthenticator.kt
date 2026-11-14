@@ -22,7 +22,7 @@ import java.io.IOException
  *
  * Thread: dipanggil OkHttp di thread jaringan, jadi `runBlocking` aman (bukan main thread).
  * Lock dipegang selama request refresh berjalan; request lain yang kena 401 menunggu paling lama
- * sebatas timeout client refresh (30 dtk), lalu memakai token hasil refresh tadi.
+ * sebatas timeout client refresh (10 dtk), lalu memakai token hasil refresh tadi.
  */
 class TokenAuthenticator(
     private val refreshApi: TokenRefreshApi,

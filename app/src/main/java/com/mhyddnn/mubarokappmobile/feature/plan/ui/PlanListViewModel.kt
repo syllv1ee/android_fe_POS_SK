@@ -87,64 +87,70 @@ class PlanListViewModel @Inject constructor(
     fun load() {
         if (_uiState.value.isLoading) return
         _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-        fetch(page = 1, replace = true)
+        viewModelScope.launch {
+            // Cache tampil dulu: offline / server tak terjangkau, request bisa menggantung sampai
+            // connect timeout — user tidak perlu menatap spinner. Server menimpa setelah fetch.
+            val cached = repository.cachedPlans()
+            if (cached.isNotEmpty() && _uiState.value.plans.isEmpty()) {
+                _uiState.update { it.copy(isLoading = false, isRefreshing = true, plans = cached) }
+            }
+            fetch(page = 1, replace = true)
+        }
     }
 
     fun refresh() {
         if (_uiState.value.isRefreshing) return
         _uiState.update { it.copy(isRefreshing = true, errorMessage = null) }
-        fetch(page = 1, replace = true)
+        viewModelScope.launch { fetch(page = 1, replace = true) }
     }
 
     fun loadMore() {
         val s = _uiState.value
         if (s.isLoading || s.isRefreshing || s.isAppending || !s.canLoadMore) return
         _uiState.update { it.copy(isAppending = true) }
-        fetch(page = s.page + 1, replace = false)
+        viewModelScope.launch { fetch(page = s.page + 1, replace = false) }
     }
 
-    private fun fetch(page: Int, replace: Boolean) {
-        viewModelScope.launch {
-            when (val result = repository.getPlans(page = page)) {
-                is Result.Success -> _uiState.update { state ->
-                    val data = result.data
-                    state.copy(
-                        isLoading = false,
-                        isRefreshing = false,
-                        isAppending = false,
-                        plans = if (replace) data.items else state.plans + data.items,
-                        page = data.page,
-                        totalPages = data.totalPages,
-                        errorMessage = null,
-                        offlineMessage = null,
-                    )
-                }
-                is Result.Error -> {
-                    val cached = if (replace) repository.cachedPlans() else emptyList()
-                    _uiState.update { state ->
-                        if (cached.isNotEmpty()) {
-                            state.copy(
-                                isLoading = false,
-                                isRefreshing = false,
-                                plans = cached,
-                                page = 1,
-                                totalPages = 1,
-                                errorMessage = null,
-                                offlineMessage = result.message,
-                            )
-                        } else {
-                            state.copy(
-                                isLoading = false,
-                                isRefreshing = false,
-                                isAppending = false,
-                                errorMessage = if (replace && state.plans.isEmpty()) result.message
-                                else state.errorMessage,
-                            )
-                        }
+    private suspend fun fetch(page: Int, replace: Boolean) {
+        when (val result = repository.getPlans(page = page)) {
+            is Result.Success -> _uiState.update { state ->
+                val data = result.data
+                state.copy(
+                    isLoading = false,
+                    isRefreshing = false,
+                    isAppending = false,
+                    plans = if (replace) data.items else state.plans + data.items,
+                    page = data.page,
+                    totalPages = data.totalPages,
+                    errorMessage = null,
+                    offlineMessage = null,
+                )
+            }
+            is Result.Error -> {
+                val cached = if (replace) repository.cachedPlans() else emptyList()
+                _uiState.update { state ->
+                    if (cached.isNotEmpty()) {
+                        state.copy(
+                            isLoading = false,
+                            isRefreshing = false,
+                            plans = cached,
+                            page = 1,
+                            totalPages = 1,
+                            errorMessage = null,
+                            offlineMessage = result.message,
+                        )
+                    } else {
+                        state.copy(
+                            isLoading = false,
+                            isRefreshing = false,
+                            isAppending = false,
+                            errorMessage = if (replace && state.plans.isEmpty()) result.message
+                            else state.errorMessage,
+                        )
                     }
                 }
-                Result.Loading -> Unit
             }
+            Result.Loading -> Unit
         }
     }
 }

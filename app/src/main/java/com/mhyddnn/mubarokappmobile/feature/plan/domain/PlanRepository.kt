@@ -20,6 +20,9 @@ interface PlanRepository {
     /** Data master form plan. Offline → salinan terakhir di HP ([PlanMasterData.offlineMessage]). */
     suspend fun getMasterData(): Result<PlanMasterData>
 
+    /** Salinan master terakhir di HP tanpa ke server; null = belum pernah dimuat online. */
+    suspend fun cachedMasterData(): PlanMasterData?
+
     /**
      * `POST /plan`: dicoba online dulu (Error = ditolak server, mis. validasi). Gagal karena
      * sinyal/server/sesi → diantrekan ([CreatePlanOutcome.Queued]) dan dikirim saat ada sinyal.

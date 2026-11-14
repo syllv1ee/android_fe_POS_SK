@@ -102,8 +102,15 @@ class PlanFormViewModel @Inject constructor(
     }
 
     fun loadMaster() {
-        _uiState.update { it.copy(isLoading = true, loadError = null) }
+        _uiState.update { it.copy(isLoading = it.master == null, loadError = null) }
         viewModelScope.launch {
+            // Cache dulu agar form langsung bisa diisi saat server mati/tak terjangkau (request bisa
+            // menggantung sampai connect timeout). Hasil server/fallback di bawah menimpanya.
+            if (_uiState.value.master == null) {
+                repository.cachedMasterData()?.let { cached ->
+                    _uiState.update { it.copy(isLoading = false, master = cached) }
+                }
+            }
             when (val result = repository.getMasterData()) {
                 is Result.Success -> _uiState.update { it.copy(isLoading = false, master = result.data) }
                 is Result.Error -> _uiState.update { it.copy(isLoading = false, loadError = result.message) }

@@ -103,6 +103,10 @@ class PlanRepositoryImpl @Inject constructor(
         return Result.Success(gson.fromJson(cached.json, PlanMasterCacheDto::class.java).toDomain(error.message))
     }
 
+    override suspend fun cachedMasterData(): PlanMasterData? = owner()
+        ?.let { planDao.master(it) }
+        ?.let { gson.fromJson(it.json, PlanMasterCacheDto::class.java).toDomain() }
+
     /** Lima endpoint master paralel; semua-atau-tidak: satu gagal → Error (cache tidak ditimpa sebagian). */
     private suspend fun fetchMasterData(): Result<PlanMasterCacheDto> = coroutineScope {
         val results = listOf(
