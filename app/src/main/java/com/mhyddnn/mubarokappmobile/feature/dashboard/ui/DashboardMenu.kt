@@ -1,20 +1,13 @@
+
 package com.mhyddnn.mubarokappmobile.feature.dashboard.ui
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocalShipping
+import androidx.compose.material.icons.filled.Store
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.mhyddnn.mubarokappmobile.feature.salescanvas.SalesCanvasRoutes
+import com.mhyddnn.mubarokappmobile.feature.visit.VisitRoutes
 
-/**
- * Satu item menu/pintasan di dashboard. Untuk menambah menu baru cukup tambahkan entri di
- * [dashboardMenus] — UI grid otomatis menampilkannya.
- *
- * @param id kunci stabil (unik) untuk menu ini.
- * @param route tujuan navigasi: objek rute `@Serializable` (mis. `SalesCanvasRoutes.Hub`); rute
- *        harus sudah didaftarkan di nav graph, atau `navigate()` crash.
- * @param requiredPermission bila diisi, menu hanya tampil bila sesi punya izin tsb (aturan
- *        `UserSession.has`: wildcard `modul:*` / `*`). `null` = selalu tampil.
- */
 data class DashboardMenu(
     val id: String,
     val title: String,
@@ -23,7 +16,20 @@ data class DashboardMenu(
     val requiredPermission: String? = null,
 )
 
-/** menu dashboard; urutan list = urutan tampil di grid (3 kolom). */
 val dashboardMenus: List<DashboardMenu> = listOf(
-    DashboardMenu(id = "sales_canvas", title = "Sales Kanvas", icon = Icons.Default.LocalShipping, route = SalesCanvasRoutes.Hub),
+
+    DashboardMenu(
+        id = "sales_canvas",
+        title = "Sales Kanvas",
+        icon = Icons.Default.LocalShipping,
+        route = SalesCanvasRoutes.Hub,
+    ),
+
+    DashboardMenu(
+        id = "visit",
+        title = "Kunjungan",
+        icon = Icons.Default.Store,
+        route = VisitRoutes.Index,
+        requiredPermission = "visit:read",
+    ),
 )
