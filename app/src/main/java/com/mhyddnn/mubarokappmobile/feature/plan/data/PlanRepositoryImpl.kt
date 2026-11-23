@@ -1,186 +1,211 @@
+
 package com.mhyddnn.mubarokappmobile.feature.plan.data
 
 import com.google.gson.Gson
-import com.mhyddnn.mubarokappmobile.core.common.Page
 import com.mhyddnn.mubarokappmobile.core.common.Result
 import com.mhyddnn.mubarokappmobile.core.common.map
-import com.mhyddnn.mubarokappmobile.core.common.mapItems
 import com.mhyddnn.mubarokappmobile.core.datastore.SessionManager
 import com.mhyddnn.mubarokappmobile.core.network.safeApiCall
-import com.mhyddnn.mubarokappmobile.core.sync.SyncQueueDao
-import com.mhyddnn.mubarokappmobile.core.sync.SyncQueueEntity
-import com.mhyddnn.mubarokappmobile.core.sync.SyncScheduler
-import com.mhyddnn.mubarokappmobile.core.sync.isTransient
-import com.mhyddnn.mubarokappmobile.feature.plan.domain.CreatePlanOutcome
 import com.mhyddnn.mubarokappmobile.feature.plan.domain.NewPlan
-import com.mhyddnn.mubarokappmobile.feature.plan.domain.PendingPlan
-import com.mhyddnn.mubarokappmobile.feature.plan.domain.PendingPlanStatus
 import com.mhyddnn.mubarokappmobile.feature.plan.domain.Plan
 import com.mhyddnn.mubarokappmobile.feature.plan.domain.PlanMasterData
 import com.mhyddnn.mubarokappmobile.feature.plan.domain.PlanRepository
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
-import java.util.UUID
 import javax.inject.Inject
 
-private const val KIND_PLAN_STATUS = "plan-status"
-private const val KIND_PLAN_CREATE = "plan-create"
-
-/**
- * Sumber data plan untuk semua layar plan.
- *
- * - **Baca** (daftar/detail/master): selalu coba server dulu; sukses -> cache Room per user
- *   (`plan_cache`, `master_data_cache`). Gagal -> ViewModel memakai `cached*()` / master tersimpan.
- * - **Ubah status**: SELALU lewat antrean sinkron, juga saat online — satu jalur, sehingga UI cukup
- *   membaca [pendingStatuses] untuk menampilkan "Belum terkirim".
- * - **Buat plan**: online dulu, gagal sementara → antrean sinkron (lihat [createPlan]).
- *
- * Cache menyimpan JSON [PlanDto] apa adanya (DTO di paket `data` dijaga R8 dari rename, jadi
- * JSON lama tetap terbaca setelah update app). Semua data dibatasi `owner` = username aktif.
- */
 class PlanRepositoryImpl @Inject constructor(
     private val api: PlanApi,
     private val planDao: PlanDao,
-    private val syncQueueDao: SyncQueueDao,
     private val sessionManager: SessionManager,
-    private val syncScheduler: SyncScheduler,
 ) : PlanRepository {
 
     private val gson = Gson()
 
-    /** Username aktif; null = belum login (cache tidak ditulis/dibaca). */
-    private suspend fun owner(): String? = sessionManager.session.first()?.username
+    private suspend fun owner(): String? =
+        sessionManager.session.first()?.username
 
-    private fun PlanEntity.toDomain(): Plan = gson.fromJson(json, PlanDto::class.java).toDomain()
+    private fun decodePlan(entity: PlanEntity): PlanDto? =
+        runCatching {
+            gson.fromJson(entity.json, PlanDto::class.java)
+        }.getOrNull()
 
-    override suspend fun getPlans(page: Int, limit: Int): Result<Page<Plan>> {
-        val result = safeApiCall { api.getPlans(page, limit) }.map { it.toPage() }
-        val owner = owner()
-        if (result is Result.Success && owner != null) {
-            // position global (lintas halaman) agar cache offline tampil dengan urutan server.
-            val entities = result.data.items.mapIndexed { i, dto ->
-                PlanEntity(owner, dto.id, position = (page - 1) * limit + i, json = gson.toJson(dto))
+    override suspend fun getPlans(): Result<List<Plan>> {
+        val result = safeApiCall { api.getPlans() }
+
+        if (result is Result.Success) {
+            val username = owner()
+
+            if (username != null) {
+                val entities = result.data.mapIndexed { index, dto ->
+                    PlanEntity(
+                        owner = username,
+                        id = dto.id,
+                        position = index,
+                        json = gson.toJson(dto),
+                    )
+                }
+
+                planDao.replace(username, entities)
             }
-            // Halaman 1 = snapshot terbaru → ganti total (plan yang hilang di server ikut hilang);
-            // halaman berikutnya hanya menambah.
-            if (page == 1) planDao.replace(owner, entities) else planDao.upsert(entities)
         }
-        return result.map { it.mapItems(PlanDto::toDomain) }
+
+        return result.map { list -> list.map(PlanDto::toDomain) }
     }
 
-    override suspend fun cachedPlans(): List<Plan> =
-        owner()?.let { planDao.all(it).map { e -> e.toDomain() } }.orEmpty()
+    override suspend fun cachedPlans(): List<Plan> {
+        val username = owner() ?: return emptyList()
+        val entities = planDao.all(username)
 
-    override suspend fun cachedPlan(id: Int): Plan? =
-        owner()?.let { planDao.get(it, id)?.toDomain() }
+        val decoded = entities.map { entity ->
+            decodePlan(entity)
+        }
+
+        // Cache lama tidak memiliki plan_no. Hapus hanya cache plan lama,
+        // bukan antrean sinkron atau data master.
+        if (decoded.any { it == null || it.planNo.isNullOrBlank() }) {
+            planDao.clear(username)
+            return emptyList()
+        }
+
+        return decoded.filterNotNull().map { it.toDomain() }
+    }
+
+    override suspend fun cachedPlan(id: Int): Plan? {
+        val username = owner() ?: return null
+        val entity = planDao.get(username, id) ?: return null
+        val dto = decodePlan(entity)
+
+        if (dto == null || dto.planNo.isNullOrBlank()) {
+            planDao.clear(username)
+            return null
+        }
+
+        return dto.toDomain()
+    }
 
     override suspend fun getPlan(id: Int): Result<Plan> {
         val result = safeApiCall { api.getPlan(id) }
-        val owner = owner()
-        if (result is Result.Success && owner != null) {
-            // Hanya perbarui yang sudah ada di cache, agar urutan daftar tidak berubah.
-            planDao.get(owner, id)?.let { planDao.upsert(listOf(it.copy(json = gson.toJson(result.data)))) }
+
+        if (result is Result.Success) {
+            val username = owner()
+
+            if (username != null) {
+                val existing = planDao.get(username, id)
+
+                if (existing != null) {
+                    planDao.upsert(
+                        listOf(
+                            existing.copy(json = gson.toJson(result.data)),
+                        ),
+                    )
+                }
+            }
         }
+
         return result.map { it.toDomain() }
     }
 
     override suspend fun getMasterData(): Result<PlanMasterData> {
-        val owner = owner()
+        val username = owner()
         val fresh = fetchMasterData()
+
         if (fresh is Result.Success) {
-            owner?.let { planDao.upsertMaster(MasterDataEntity(it, gson.toJson(fresh.data))) }
+            if (username != null) {
+                planDao.upsertMaster(
+                    MasterDataEntity(
+                        owner = username,
+                        json = gson.toJson(fresh.data),
+                    ),
+                )
+            }
+
             return Result.Success(fresh.data.toDomain())
         }
+
         val error = fresh as Result.Error
-        val cached = owner?.let { planDao.master(it) }
-            ?: return error.copy(message = "${error.message} Buka form ini sekali saat online agar bisa dipakai offline.")
-        return Result.Success(gson.fromJson(cached.json, PlanMasterCacheDto::class.java).toDomain(error.message))
+        val cached = username?.let { planDao.master(it) }
+            ?: return error.copy(
+                message = "${error.message} Buka form saat online untuk memuat data pilihan.",
+            )
+
+        val cachedDto = runCatching {
+            gson.fromJson(cached.json, PlanMasterCacheDto::class.java)
+        }.getOrNull() ?: return error
+
+        return Result.Success(cachedDto.toDomain(error.message))
     }
 
-    override suspend fun cachedMasterData(): PlanMasterData? = owner()
-        ?.let { planDao.master(it) }
-        ?.let { gson.fromJson(it.json, PlanMasterCacheDto::class.java).toDomain() }
+    override suspend fun cachedMasterData(): PlanMasterData? {
+        val username = owner() ?: return null
+        val cached = planDao.master(username) ?: return null
 
-    /** Lima endpoint master paralel; semua-atau-tidak: satu gagal → Error (cache tidak ditimpa sebagian). */
-    private suspend fun fetchMasterData(): Result<PlanMasterCacheDto> = coroutineScope {
-        val results = listOf(
-            async { safeApiCall { api.getMarketAreas() } },
-            async { safeApiCall { api.getVehicles() } },
-            async { safeApiCall { api.getEmployees() } },
-            async { safeApiCall { api.getProducts() } },
-            async { safeApiCall { api.getKasbonTypes() } },
-        ).map { it.await() }
-        results.firstOrNull { it is Result.Error }?.let { return@coroutineScope it as Result.Error }
-        val (areas, vehicles, employees, products, kasbon) = results.map { (it as Result.Success).data }
-        Result.Success(PlanMasterCacheDto(areas, vehicles, employees, products, kasbon))
+        return runCatching {
+            gson.fromJson(cached.json, PlanMasterCacheDto::class.java).toDomain()
+        }.getOrNull()
     }
 
-    override suspend fun createPlan(plan: NewPlan): Result<CreatePlanOutcome> {
-        val owner = owner() ?: return Result.Error("Belum login")
+    private suspend fun fetchMasterData(): Result<PlanMasterCacheDto> =
+        coroutineScope {
+            val areas = async { safeApiCall { api.getMarketAreas() } }
+            val vehicles = async { safeApiCall { api.getVehicles() } }
+            val employees = async { safeApiCall { api.getEmployees() } }
+            val outlets = async { safeApiCall { api.getOutlets() } }
+
+            val results = listOf(
+                areas.await(),
+                vehicles.await(),
+                employees.await(),
+                outlets.await(),
+            )
+
+            val error = results.firstOrNull { it is Result.Error }
+
+            if (error is Result.Error) {
+                return@coroutineScope error
+            }
+
+            val areaData = (results[0] as Result.Success).data
+            val vehicleData = (results[1] as Result.Success).data
+            val employeeData = (results[2] as Result.Success).data
+            val outletData = (results[3] as Result.Success).data
+
+            Result.Success(
+                PlanMasterCacheDto(
+                    marketAreas = areaData,
+                    vehicles = vehicleData,
+                    employees = employeeData,
+                    outlets = outletData,
+                ),
+            )
+        }
+
+    override suspend fun createPlan(plan: NewPlan): Result<Plan> {
         val request = plan.toRequest()
-        // Key yang sama dipakai online & antrean sinkron: bila server sempat memproses tapi balasannya
-        // hilang, kiriman ulang dari antrean sinkron mengembalikan plan yang sama, bukan plan kedua.
-        val key = UUID.randomUUID().toString()
-        val result = safeApiCall { api.createPlan(key, request) }
-        if (result !is Result.Error || !result.isTransient()) {
-            return result.map { CreatePlanOutcome.Created(it.toDomain()) }
-        }
-        syncQueueDao.insert(
-            SyncQueueEntity(id = key, owner = owner, kind = KIND_PLAN_CREATE, path = "plan", body = gson.toJson(request)),
-        )
-        syncScheduler.schedule()
-        return Result.Success(CreatePlanOutcome.Queued)
+
+        return safeApiCall {
+            api.createPlan(request)
+        }.map { it.toDomain() }
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
-    override val pendingPlans: Flow<List<PendingPlan>> = sessionManager.session.flatMapLatest { s ->
-        if (s == null) flowOf(emptyList())
-        else syncQueueDao.observe(s.username, KIND_PLAN_CREATE).map { items ->
-            val master = planDao.master(s.username)
-                ?.let { gson.fromJson(it.json, PlanMasterCacheDto::class.java).toDomain() }
-            items.map { it.toPendingPlan(master) }
-        }
-    }
+    override suspend fun approvePlan(id: Int): Result<Plan> =
+        safeApiCall { api.approvePlan(id) }.map { it.toDomain() }
 
-    /**
-     * Antrekan `PATCH plan/{id}/update-status`. Tanpa `Idempotency-Key` di BE untuk endpoint ini —
-     * aman karena hanya men-set nilai. Format path dibaca balik oleh `toPendingPlanStatus()`.
-     */
-    override suspend fun updateStatus(planId: Int, status: String) {
-        val owner = checkNotNull(owner()) { "Belum login" }
-        syncQueueDao.insert(
-            SyncQueueEntity(
-                id = UUID.randomUUID().toString(),
-                owner = owner,
-                kind = KIND_PLAN_STATUS,
-                path = "plan/$planId/update-status",
-                body = gson.toJson(UpdatePlanStatusRequest(status)),
-                method = SyncQueueEntity.METHOD_PATCH,
-            ),
-        )
-        syncScheduler.schedule()
-    }
+    override suspend fun cancelPlan(id: Int): Result<Plan> =
+        safeApiCall { api.cancelPlan(id) }.map { it.toDomain() }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
-    override val pendingStatuses: Flow<List<PendingPlanStatus>> = sessionManager.session.flatMapLatest { s ->
-        if (s == null) flowOf(emptyList())
-        else syncQueueDao.observe(s.username, KIND_PLAN_STATUS).map { items -> items.map { it.toPendingPlanStatus() } }
-    }
+    override suspend fun completePlan(
+        id: Int,
+        warehouseId: Int?,
+    ): Result<Plan> =
+        safeApiCall {
+            api.completePlan(
+                id = id,
+                body = CompletePlanRequest(warehouseId),
+            )
+        }.map { it.toDomain() }
 
-    override suspend fun retryPending(id: String) {
-        val owner = owner() ?: return
-        syncQueueDao.retry(id, owner)
-        syncScheduler.schedule()
-    }
-
-    override suspend fun discardPending(id: String) {
-        val owner = owner() ?: return
-        syncQueueDao.delete(id, owner)
-    }
+    override suspend fun cancelLoading(id: Int): Result<Plan> =
+        safeApiCall { api.cancelLoading(id) }.map { it.toDomain() }
 }

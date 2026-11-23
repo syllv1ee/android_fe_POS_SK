@@ -1,45 +1,32 @@
+
 package com.mhyddnn.mubarokappmobile.feature.plan.domain
 
-import com.mhyddnn.mubarokappmobile.core.common.Page
 import com.mhyddnn.mubarokappmobile.core.common.Result
-import kotlinx.coroutines.flow.Flow
 
 interface PlanRepository {
 
-    /** Satu halaman daftar plan. Sukses → cache lokal ikut diperbarui. */
-    suspend fun getPlans(page: Int = 1, limit: Int = 10): Result<Page<Plan>>
+    suspend fun getPlans(): Result<List<Plan>>
 
-    /** Daftar plan terakhir yang tersimpan di HP (mode offline). */
     suspend fun cachedPlans(): List<Plan>
 
     suspend fun cachedPlan(id: Int): Plan?
 
-    /** Detail terbaru dari server; sukses → cache plan itu diperbarui. */
     suspend fun getPlan(id: Int): Result<Plan>
 
-    /** Data master form plan. Offline → salinan terakhir di HP ([PlanMasterData.offlineMessage]). */
     suspend fun getMasterData(): Result<PlanMasterData>
 
-    /** Salinan master terakhir di HP tanpa ke server; null = belum pernah dimuat online. */
     suspend fun cachedMasterData(): PlanMasterData?
 
-    /**
-     * `POST /plan`: dicoba online dulu (Error = ditolak server, mis. validasi). Gagal karena
-     * sinyal/server/sesi → diantrekan ([CreatePlanOutcome.Queued]) dan dikirim saat ada sinyal.
-     */
-    suspend fun createPlan(plan: NewPlan): Result<CreatePlanOutcome>
+    suspend fun createPlan(plan: NewPlan): Result<Plan>
 
-    /** Plan baru yang belum diterima server, terbaru dulu. */
-    val pendingPlans: Flow<List<PendingPlan>>
+    suspend fun approvePlan(id: Int): Result<Plan>
 
-    /** Antrekan perubahan status; dikirim saat ada sinyal. Selalu berhasil secara lokal. */
-    suspend fun updateStatus(planId: Int, status: String)
+    suspend fun cancelPlan(id: Int): Result<Plan>
 
-    /** Perubahan status yang belum diterima server, terbaru dulu. */
-    val pendingStatuses: Flow<List<PendingPlanStatus>>
+    suspend fun completePlan(
+        id: Int,
+        warehouseId: Int? = null,
+    ): Result<Plan>
 
-    /** Kirim ulang item antrean yang ditolak (perubahan status maupun plan baru). */
-    suspend fun retryPending(id: String)
-
-    suspend fun discardPending(id: String)
+    suspend fun cancelLoading(id: Int): Result<Plan>
 }
