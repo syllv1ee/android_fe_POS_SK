@@ -1,15 +1,22 @@
+
 package com.mhyddnn.mubarokappmobile.core.database
 
 import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.mhyddnn.mubarokappmobile.core.sync.SyncQueueApi
 import com.mhyddnn.mubarokappmobile.core.sync.SyncQueueDao
 import com.mhyddnn.mubarokappmobile.core.sync.SyncQueueEntity
+import com.mhyddnn.mubarokappmobile.feature.plan.data.MasterDataEntity
 import com.mhyddnn.mubarokappmobile.feature.plan.data.PlanDao
 import com.mhyddnn.mubarokappmobile.feature.plan.data.PlanEntity
-import com.mhyddnn.mubarokappmobile.feature.plan.data.MasterDataEntity
+import com.mhyddnn.mubarokappmobile.feature.visit.data.VisitDao
+import com.mhyddnn.mubarokappmobile.feature.visit.data.VisitEntity
+import com.mhyddnn.mubarokappmobile.feature.visit.data.VisitMarketAreaDao
+import com.mhyddnn.mubarokappmobile.feature.visit.data.VisitMarketAreaEntity
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -19,29 +26,79 @@ import retrofit2.Retrofit
 import javax.inject.Singleton
 
 /**
- * Database lokal `mubarok.db`: cache baca (daftar plan, master form plan) + antrean sinkron
- * (data tulis yang menunggu sinkron). Semua tabel disaring per `username`.
+ * Database lokal mubarok.db.
  *
- * Ubah schema (entity baru / kolom baru) — saat ini v1, belum ada Migration:
- * 1. Tambahkan ke `entities`, NAIKKAN `version`.
- * 2. Tulis `MIGRATION_<lama>_<baru>` dan daftarkan di [DatabaseModule.provideDatabase].
- *    DDL disalin PERSIS dari `createSql` di `app/schemas/.../<baru>.json` (Room memvalidasi schema
- *    saat DB dibuka dan crash bila beda). Kolom NOT NULL baru wajib DEFAULT agar baris antrean sinkron
- *    lama tetap valid.
- * 3. Build → commit `app/schemas/.../<versi>.json` (dihasilkan plugin Room).
- * 4. Buat `MigrationTest` (androidTest, `MigrationTestHelper`) lalu jalankan `connectedDebugAndroidTest`.
+ * Versi 2 menambahkan visit_cache.
+ * Versi 3 menambahkan visit_market_area_cache.
  *
- * Cache boleh hilang (diambil ulang dari server), antrean sinkron TIDAK — karena itu tidak ada migrasi
- * destruktif sama sekali.
+ * Migrasi mempertahankan data Plan, Visit, dan antrean sinkronisasi.
  */
 @Database(
-    entities = [SyncQueueEntity::class, PlanEntity::class, MasterDataEntity::class],
-    version = 1,
+    entities = [
+        SyncQueueEntity::class,
+        PlanEntity::class,
+        MasterDataEntity::class,
+        VisitEntity::class,
+        VisitMarketAreaEntity::class,
+    ],
+    version = 3,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
-    abstract fun syncQueueDao(): SyncQueueDao // data offline
-    abstract fun planDao(): PlanDao // data dari server
+
+    abstract fun syncQueueDao(): SyncQueueDao
+
+    abstract fun planDao(): PlanDao
+
+    abstract fun visitDao(): VisitDao
+
+    abstract fun visitMarketAreaDao(): VisitMarketAreaDao
+}
+
+/**
+ * Migrasi database versi 1 ke versi 2.
+ * Menambahkan tabel visit_cache.
+ */
+internal val MIGRATION_1_2 = object : Migration(1, 2) {
+
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS `visit_cache` (
+                `owner` TEXT NOT NULL,
+                `localId` INTEGER NOT NULL,
+                `serverId` INTEGER,
+                `idempotencyKey` TEXT,
+                `position` INTEGER NOT NULL,
+                `json` TEXT NOT NULL,
+                `syncStatus` TEXT NOT NULL,
+                PRIMARY KEY(`owner`, `localId`)
+            )
+            """.trimIndent()
+        )
+    }
+}
+
+/**
+ * Migrasi database versi 2 ke versi 3.
+ * Menambahkan cache wilayah pasar Visit.
+ */
+internal val MIGRATION_2_3 = object : Migration(2, 3) {
+
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS `visit_market_area_cache` (
+                `owner` TEXT NOT NULL,
+                `id` INTEGER NOT NULL,
+                `name` TEXT NOT NULL,
+                `code` TEXT,
+                `position` INTEGER NOT NULL,
+                PRIMARY KEY(`owner`, `id`)
+            )
+            """.trimIndent()
+        )
+    }
 }
 
 @Module
@@ -50,20 +107,38 @@ object DatabaseModule {
 
     @Provides
     @Singleton
-    fun provideDatabase(@ApplicationContext context: Context): AppDatabase =
-        // Sengaja TANPA fallbackToDestructiveMigration: itu menghapus antrean yang belum
-        // terkirim. Ubah schema → wajib tulis Migration (app crash saat dibuka bila lupa, jadi ketahuan di dev).
-        Room.databaseBuilder(context, AppDatabase::class.java, "mubarok.db").build()
+    fun provideDatabase(
+        @ApplicationContext context: Context,
+    ): AppDatabase =
+        Room.databaseBuilder(
+            context,
+            AppDatabase::class.java,
+            "mubarok.db",
+        )
+            .addMigrations(
+                MIGRATION_1_2,
+                MIGRATION_2_3,
+            )
+            .build()
 
-    // DAO tanpa @Singleton: Room sudah meng-cache instance DAO di dalam AppDatabase.
     @Provides
-    fun provideSyncQueueDao(db: AppDatabase): SyncQueueDao = db.syncQueueDao()
+    fun provideSyncQueueDao(db: AppDatabase): SyncQueueDao =
+        db.syncQueueDao()
 
     @Provides
-    fun providePlanDao(db: AppDatabase): PlanDao = db.planDao()
+    fun providePlanDao(db: AppDatabase): PlanDao =
+        db.planDao()
 
-    /** Di sini (bukan modul terpisah) karena `core/sync` tidak punya modul Hilt sendiri. */
+    @Provides
+    fun provideVisitDao(db: AppDatabase): VisitDao =
+        db.visitDao()
+
+    @Provides
+    fun provideVisitMarketAreaDao(db: AppDatabase): VisitMarketAreaDao =
+        db.visitMarketAreaDao()
+
     @Provides
     @Singleton
-    fun provideSyncQueueApi(retrofit: Retrofit): SyncQueueApi = retrofit.create(SyncQueueApi::class.java)
+    fun provideSyncQueueApi(retrofit: Retrofit): SyncQueueApi =
+        retrofit.create(SyncQueueApi::class.java)
 }
